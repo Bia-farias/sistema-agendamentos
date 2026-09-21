@@ -13,13 +13,25 @@ interface AuthState {
   logout: () => void;
   setTenant: (tenant: Tenant) => void;
   updateProfile: (data: Partial<Profile>) => void;
+  isSuperAdmin: () => boolean;
+  isAdmin: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: { id: 'user-owner-1', email: 'admin@agendaai.com' },
+  user: { id: 'user-super-1', email: 'admin@agendaai.com' },
   profile: initialProfiles[0],
   tenant: initialTenant,
   loading: false,
+
+  isSuperAdmin: () => {
+    const role = get().profile?.role;
+    return role === 'super_admin' || role === 'owner';
+  },
+
+  isAdmin: () => {
+    const role = get().profile?.role;
+    return role === 'super_admin' || role === 'owner' || role === 'admin';
+  },
 
   initialize: async () => {
     const savedUser = localStorage.getItem('agenda_ai_user');
@@ -68,16 +80,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   quickLogin: (role: UserRole) => {
-    const matched = initialProfiles.find((p) => p.role === role) || initialProfiles[0];
-    const userObj = { id: matched.user_id, email: matched.email };
+    const roleTitles: Record<UserRole, string> = {
+      super_admin: 'Super Administrador',
+      owner: 'Super Administrador',
+      admin: 'Administrador',
+      professional: 'Profissional',
+      receptionist: 'Recepcionista',
+    };
+
+    const newProfile: Profile = {
+      id: `prof-${role}`,
+      user_id: `user-${role}`,
+      tenant_id: initialTenant.id,
+      full_name: roleTitles[role] || 'Usuário',
+      role,
+      email: `${role}@agendaai.com`,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+
+    const userObj = { id: newProfile.user_id, email: newProfile.email };
 
     localStorage.setItem('agenda_ai_user', JSON.stringify(userObj));
-    localStorage.setItem('agenda_ai_profile', JSON.stringify(matched));
+    localStorage.setItem('agenda_ai_profile', JSON.stringify(newProfile));
     localStorage.setItem('agenda_ai_tenant', JSON.stringify(initialTenant));
 
     set({
       user: userObj,
-      profile: matched,
+      profile: newProfile,
       tenant: initialTenant,
     });
   },

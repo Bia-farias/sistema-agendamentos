@@ -150,6 +150,44 @@ export function Sidebar() {
         })}
       </div>
 
+      {/* Mini Card de Plano Atual & Upgrade */}
+      {isSidebarOpen ? (
+        <div className="mx-3 mb-3 p-3 rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-transparent border border-violet-200/70 dark:border-violet-800/40">
+          <div className="flex items-center justify-between gap-1 mb-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-violet-600 dark:text-violet-400 flex items-center gap-1">
+              <Sparkles size={11} />
+              Plano Ativo
+            </span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300">
+              Free 7 Dias
+            </span>
+          </div>
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+            Single • 7 dias de avaliação
+          </p>
+          <a
+            href="/#planos"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2.5 block w-full py-1.5 px-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-[11px] font-extrabold text-center shadow-xs shadow-violet-500/20 hover:shadow-violet-500/30 transition-all"
+          >
+            Fazer Upgrade ⚡
+          </a>
+        </div>
+      ) : (
+        <div className="mb-3 flex justify-center">
+          <a
+            href="/#planos"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Ver Planos e Upgrade"
+            className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center hover:scale-105 transition-transform"
+          >
+            <Sparkles size={16} />
+          </a>
+        </div>
+      )}
+
       {/* Footer User Profile & Logout */}
       <div className="p-3 border-t border-violet-100/60 dark:border-violet-900/20 bg-violet-50/30 dark:bg-violet-500/5">
         <div className={cn('flex items-center gap-3', !isSidebarOpen && 'justify-center')}>
@@ -159,11 +197,28 @@ export function Sidebar() {
           {isSidebarOpen && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-zinc-800 dark:text-zinc-100 truncate">
-                {profile?.full_name || 'Administrador'}
+                {profile?.full_name || 'Super Administrador'}
               </p>
-              <p className="text-[10px] text-zinc-400 capitalize truncate">
-                {profile?.role === 'owner' ? 'Proprietário' : profile?.role || 'Admin'}
-              </p>
+              <span
+                className={cn(
+                  'inline-block text-[9px] font-extrabold px-1.5 py-0.5 rounded-md mt-0.5',
+                  profile?.role === 'super_admin' || profile?.role === 'owner'
+                    ? 'bg-amber-100/90 text-amber-900 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40'
+                    : profile?.role === 'admin'
+                    ? 'bg-violet-100 text-violet-800 dark:bg-violet-950/40 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40'
+                    : profile?.role === 'professional'
+                    ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300'
+                    : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                )}
+              >
+                {profile?.role === 'super_admin' || profile?.role === 'owner'
+                  ? 'Super Adm 👑'
+                  : profile?.role === 'admin'
+                  ? 'Admin 🛡️'
+                  : profile?.role === 'professional'
+                  ? 'Profissional'
+                  : 'Recepção'}
+              </span>
             </div>
           )}
           {isSidebarOpen && (

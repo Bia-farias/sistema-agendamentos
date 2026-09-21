@@ -114,9 +114,9 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => {
         todayAppointmentsCount: todayApts.length,
         todayPendingCount,
         todayCompletedCount,
-        newCustomersThisMonth: 14,
-        occupancyRate: occupancyRate || 68,
-        weeklyRevenueChange: 18.4,
+        newCustomersThisMonth: 0,
+        occupancyRate: occupancyRate || 0,
+        weeklyRevenueChange: 0,
       };
     },
   };

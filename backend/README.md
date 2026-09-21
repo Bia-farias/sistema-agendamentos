@@ -72,9 +72,14 @@ FRONTEND_URL="http://localhost:5173"
 npm run prisma:generate
 ```
 
-### 4. Executar os Testes da Fase 1
+### 4. Executar os Testes Automatizados
 ```bash
+# Executar todos os testes (Fase 1 e Fase 2)
 npm test
+
+# Ou individualmente
+npm run test:phase1
+npm run test:phase2
 ```
 
 ### 5. Iniciar em Modo de Desenvolvimento
@@ -85,9 +90,33 @@ Servidor disponível em: `http://localhost:3001`
 
 ---
 
-## 🛡️ Endpoints Implementados (Fase 1)
+## 🛡️ Endpoints Implementados
 
-* `GET /api/health` — Status da API e teste de conexão do banco de dados
+### Fase 1: Autenticação & Setup
+* `GET /api/health` — Status da API e teste de integridade
 * `POST /api/auth/register` — Criação atômica do Tenant e Usuário Proprietário (OWNER)
 * `POST /api/auth/login` — Autenticação por e-mail e senha, geração de JWT
 * `GET /api/auth/me` — Consulta dos dados do usuário autenticado e seu Tenant
+
+### Fase 2: Clientes, Serviços e Profissionais (Multi-Tenant)
+* **Clientes (`/api/clients`)**:
+  * `GET /api/clients` — Listagem paginada com busca por nome, telefone, e-mail e filtro VIP
+  * `GET /api/clients/:id` — Detalhes do cliente com histórico recente de agendamentos
+  * `POST /api/clients` — Cadastro de novo cliente vinculado ao tenant
+  * `PUT /api/clients/:id` — Atualização cadastral do cliente
+  * `DELETE /api/clients/:id` — Remoção com proteção contra exclusão de clientes com agendamentos
+
+* **Serviços (`/api/services`)**:
+  * `GET /api/services` — Listagem com filtros por categoria e status ativo
+  * `GET /api/services/:id` — Detalhes do serviço
+  * `POST /api/services` — Criação de procedimento (restrito a `OWNER`, `ADMIN`)
+  * `PUT /api/services/:id` — Atualização de procedimento (restrito a `OWNER`, `ADMIN`)
+  * `DELETE /api/services/:id` — Exclusão ou desativação segura (restrito a `OWNER`, `ADMIN`)
+
+* **Profissionais (`/api/professionals`)**:
+  * `GET /api/professionals` — Listagem da equipe com especialidades e horários de trabalho
+  * `GET /api/professionals/:id` — Detalhes do profissional e atendimentos recentes
+  * `POST /api/professionals` — Cadastro de membro da equipe (restrito a `OWNER`, `ADMIN`)
+  * `PUT /api/professionals/:id` — Atualização de dados e escala de atendimento (restrito a `OWNER`, `ADMIN`)
+  * `DELETE /api/professionals/:id` — Exclusão ou desativação da equipe (restrito a `OWNER`, `ADMIN`)
+

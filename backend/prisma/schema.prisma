@@ -17,6 +17,7 @@ datasource db {
 // ------------------------------------------------------------------------------
 
 enum UserRole {
+  SUPER_ADMIN
   OWNER
   ADMIN
   PROFESSIONAL
@@ -31,8 +32,10 @@ enum AppointmentStatus {
 }
 
 enum TenantPlan {
+  FREE_SINGLE
   FREE
   STARTER
+  ADVANCE
   PRO
   ENTERPRISE
 }

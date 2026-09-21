@@ -30,6 +30,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { tenant, profile } = useAuthStore();
   const {
+    appointments,
     getKPIs,
     getTodayAppointments,
     openNewAppointmentDrawer,
@@ -55,18 +56,30 @@ export default function Dashboard() {
     cancelled: 'Cancelado',
   };
 
-  // Mock weekly revenue chart data
-  const weeklyData = [
-    { day: 'Seg', revenue: 950, appointments: 8 },
-    { day: 'Ter', revenue: 1420, appointments: 12 },
-    { day: 'Qua', revenue: 1100, appointments: 9 },
-    { day: 'Qui', revenue: 1680, appointments: 14 },
-    { day: 'Sex', revenue: 2450, appointments: 19 },
-    { day: 'Sáb', revenue: 3100, appointments: 24 },
-    { day: 'Dom', revenue: 450, appointments: 3 },
-  ];
+  // Cálculo dinâmico dos últimos 7 dias baseado nos agendamentos reais
+  const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const weeklyData = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    const dayLabel = dayNames[d.getDay()];
 
-  const maxRevenue = Math.max(...weeklyData.map((d) => d.revenue));
+    const dayApts = appointments.filter(
+      (a) => a.date === dateStr && a.status !== 'cancelled'
+    );
+    const revenue = dayApts.reduce((sum, a) => sum + (a.total_price || 0), 0);
+
+    return {
+      day: dayLabel,
+      revenue,
+      appointments: dayApts.length,
+    };
+  });
+
+  const maxRevenue = Math.max(...weeklyData.map((d) => d.revenue), 1);
 
   return (
     <div className="space-y-8">
@@ -301,31 +314,39 @@ export default function Dashboard() {
               }
             />
 
-            <div className="space-y-3">
-              {services.slice(0, 4).map((service, idx) => (
-                <div
-                  key={service.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-violet-50/30 dark:bg-zinc-900/40 border border-violet-100/70 dark:border-zinc-800 text-xs"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-lg bg-violet-100/80 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 font-bold flex items-center justify-center text-xs">
-                      #{idx + 1}
-                    </span>
-                    <div>
-                      <p className="font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[170px] sm:max-w-[220px]">
-                        {service.name}
-                      </p>
-                      <p className="text-[11px] text-zinc-400">
-                        {service.category} • {service.duration_minutes} min
-                      </p>
+            {services.length === 0 ? (
+              <div className="text-center py-8 px-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-400">
+                <Scissors size={28} className="mx-auto mb-2 opacity-30 text-violet-500" />
+                <p className="font-semibold text-xs text-zinc-600 dark:text-zinc-300">Nenhum serviço cadastrado ainda</p>
+                <p className="text-[11px] text-zinc-400 mt-0.5">Cadastre seus serviços para acompanhar o desempenho</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {services.slice(0, 4).map((service, idx) => (
+                  <div
+                    key={service.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-violet-50/30 dark:bg-zinc-900/40 border border-violet-100/70 dark:border-zinc-800 text-xs"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 h-6 rounded-lg bg-violet-100/80 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 font-bold flex items-center justify-center text-xs">
+                        #{idx + 1}
+                      </span>
+                      <div>
+                        <p className="font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[170px] sm:max-w-[220px]">
+                          {service.name}
+                        </p>
+                        <p className="text-[11px] text-zinc-400">
+                          {service.category} • {service.duration_minutes} min
+                        </p>
+                      </div>
                     </div>
+                    <span className="font-extrabold text-zinc-900 dark:text-zinc-100 font-mono">
+                      {formatCurrency(service.price)}
+                    </span>
                   </div>
-                  <span className="font-extrabold text-zinc-900 dark:text-zinc-100 font-mono">
-                    {formatCurrency(service.price)}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
       </div>

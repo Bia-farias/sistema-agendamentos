@@ -127,71 +127,16 @@ const initialRules: WhatsAppReminderRule[] = [
   },
 ];
 
-const initialLogs: WhatsAppMessageLog[] = [
-  {
-    id: 'log-1',
-    customerName: 'Beatriz Lima',
-    customerPhone: '11988776655',
-    templateName: 'Lembrete 24h Antes',
-    message: 'Oi, Beatriz! Passando para lembrar do seu horário amanhã! 📅 Data: 08/09 às 14:00...',
-    status: 'read',
-    sentAt: 'Hoje às 10:15',
-  },
-  {
-    id: 'log-2',
-    customerName: 'Carlos Eduardo',
-    customerPhone: '11977665544',
-    templateName: 'Confirmação Imediata',
-    message: 'Olá, Carlos! 👋 Seu agendamento no Studio Prime & Estética foi confirmado com sucesso...',
-    status: 'delivered',
-    sentAt: 'Hoje às 09:30',
-  },
-  {
-    id: 'log-3',
-    customerName: 'Juliana Mendes',
-    customerPhone: '11966554433',
-    templateName: 'Lembrete 2h Antes',
-    message: 'Oi, Juliana! Seu horário no Studio Prime & Estética é daqui a pouco, às 16:30...',
-    status: 'read',
-    sentAt: 'Hoje às 08:45',
-  },
-  {
-    id: 'log-4',
-    customerName: 'Rafael Santos',
-    customerPhone: '11955443322',
-    templateName: 'Pós-Atendimento & Avaliação',
-    message: 'Olá, Rafael! Esperamos que tenha amado o resultado do seu Corte Masculino Degrade...',
-    status: 'read',
-    sentAt: 'Ontem às 18:20',
-  },
-  {
-    id: 'log-5',
-    customerName: 'Mariana Costa',
-    customerPhone: '11944332211',
-    templateName: 'Confirmação Imediata',
-    message: 'Olá, Mariana! 👋 Seu agendamento de Mechas Loiro Glow foi confirmado...',
-    status: 'delivered',
-    sentAt: 'Ontem às 15:10',
-  },
-  {
-    id: 'log-6',
-    customerName: 'Fernanda Oliveira',
-    customerPhone: '11933221100',
-    templateName: 'Resgate de Clientes Inativos',
-    message: 'Oi Fernanda, tudo bem? Sentimos sua falta aqui no Studio Prime & Estética! 🌸...',
-    status: 'sent',
-    sentAt: 'Ontem às 11:00',
-  },
-];
+const initialLogs: WhatsAppMessageLog[] = [];
 
 const initialConnection: WhatsAppConnectionInfo = {
-  status: 'connected',
-  phoneNumber: '+55 (11) 98888-7777',
-  instanceName: 'Studio Prime - WhatsApp Business',
-  batteryLevel: 94,
-  lastSyncAt: 'Agora há pouco',
-  totalSentThisMonth: 148,
-  confirmationRate: 92.5,
+  status: 'disconnected',
+  phoneNumber: '',
+  instanceName: '',
+  batteryLevel: 100,
+  lastSyncAt: '',
+  totalSentThisMonth: 0,
+  confirmationRate: 0,
 };
 
 function loadSavedState() {

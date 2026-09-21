@@ -5,6 +5,7 @@ import { About } from '../components/landing/About';
 import { Features } from '../components/landing/Features';
 import { InteractivePreview } from '../components/landing/InteractivePreview';
 import { Benefits } from '../components/landing/Benefits';
+import { Pricing } from '../components/landing/Pricing';
 import { HowItWorks } from '../components/landing/HowItWorks';
 import { FAQ } from '../components/landing/FAQ';
 import { CTASection } from '../components/landing/CTASection';
@@ -41,6 +42,9 @@ export default function LandingPage() {
 
         {/* Como Funciona em 4 Passos */}
         <HowItWorks />
+
+        {/* Tabela de Planos e Preços */}
+        <Pricing />
 
         {/* Perguntas Frequentes */}
         <FAQ />

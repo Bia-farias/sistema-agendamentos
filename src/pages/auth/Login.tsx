@@ -109,16 +109,27 @@ export default function Login() {
           <Sparkles size={14} className="text-violet-500" />
           Acesso Rápido de Demonstração
         </p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <button
             type="button"
-            onClick={() => handleDemoLogin('owner')}
+            onClick={() => handleDemoLogin('super_admin')}
+            className="p-2.5 rounded-xl bg-violet-50/50 dark:bg-violet-950/30 hover:bg-violet-100/70 dark:hover:bg-violet-900/40 border border-violet-200 dark:border-violet-800/60 hover:border-violet-400 transition-all text-left group shadow-xs"
+          >
+            <span className="text-[11px] font-bold text-violet-900 dark:text-violet-200 group-hover:text-violet-700 dark:group-hover:text-violet-100 flex items-center gap-1">
+              👑 Super Adm
+            </span>
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mt-0.5">Acesso Master</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDemoLogin('admin')}
             className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 hover:bg-violet-50 dark:hover:bg-violet-950/40 border border-violet-100 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-500/40 transition-all text-left group shadow-xs"
           >
-            <span className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 block">
-              Dono / Admin
+            <span className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 flex items-center gap-1">
+              🛡️ Adm
             </span>
-            <span className="text-[10px] text-zinc-400">Acesso total</span>
+            <span className="text-[10px] text-zinc-400 block mt-0.5">Gestão Geral</span>
           </button>
 
           <button
@@ -129,7 +140,7 @@ export default function Login() {
             <span className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 block">
               Profissional
             </span>
-            <span className="text-[10px] text-zinc-400">Minha escala</span>
+            <span className="text-[10px] text-zinc-400 block mt-0.5">Minha Escala</span>
           </button>
 
           <button
@@ -140,7 +151,7 @@ export default function Login() {
             <span className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 block">
               Recepção
             </span>
-            <span className="text-[10px] text-zinc-400">Agendamentos</span>
+            <span className="text-[10px] text-zinc-400 block mt-0.5">Atendimento</span>
           </button>
         </div>
       </div>

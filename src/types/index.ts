@@ -1,4 +1,4 @@
-export type UserRole = 'owner' | 'admin' | 'professional' | 'receptionist';
+export type UserRole = 'super_admin' | 'owner' | 'admin' | 'professional' | 'receptionist';
 
 export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
@@ -6,7 +6,7 @@ export interface Tenant {
   id: string;
   name: string;
   slug: string;
-  plan: 'free' | 'starter' | 'pro' | 'enterprise';
+  plan: 'free_single' | 'advance' | 'enterprise' | 'free' | 'starter' | 'pro';
   phone?: string;
   email?: string;
   logo_url?: string;
