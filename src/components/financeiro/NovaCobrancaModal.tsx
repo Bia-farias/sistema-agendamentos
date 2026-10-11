@@ -9,6 +9,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { formatCurrency } from '../../utils/format';
+import { maskPhone } from '../../utils/masks';
 import { PaymentMethod, ReceivableStatus } from '../../types/financeiro';
 import { DollarSign, Check, User, Scissors, Calendar } from 'lucide-react';
 
@@ -157,7 +158,7 @@ export function NovaCobrancaModal({ isOpen, onClose }: NovaCobrancaModalProps) {
               label="WhatsApp / Telefone"
               placeholder="(11) 99999-9999"
               value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
+              onChange={(e) => setCustomerPhone(maskPhone(e.target.value))}
             />
           </div>
         </div>

@@ -689,4 +689,148 @@ BEGIN
 
 END $$;
 
+-- ==============================================================================
+-- 8. MÓDULO FINANCEIRO (ERP COMPLETO MULTI-TENANT)
+-- ==============================================================================
+
+-- 8.1. CONTAS A RECEBER
+CREATE TABLE IF NOT EXISTS public.financial_receivables (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  appointment_id UUID,
+  customer_id UUID,
+  customer_name TEXT NOT NULL,
+  customer_phone TEXT,
+  service_name TEXT,
+  professional_name TEXT,
+  description TEXT NOT NULL,
+  original_amount NUMERIC(10, 2) NOT NULL,
+  discount NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+  surcharge NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+  final_amount NUMERIC(10, 2) NOT NULL,
+  amount_paid NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+  payment_method TEXT,
+  due_date DATE NOT NULL,
+  paid_at DATE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  has_signal BOOLEAN NOT NULL DEFAULT false,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 8.2. CONTAS A PAGAR
+CREATE TABLE IF NOT EXISTS public.financial_payables (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  description TEXT NOT NULL,
+  category TEXT NOT NULL,
+  amount NUMERIC(10, 2) NOT NULL,
+  paid_amount NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+  due_date DATE NOT NULL,
+  paid_at DATE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  supplier_name TEXT,
+  professional_name TEXT,
+  payment_method TEXT,
+  is_recurring BOOLEAN NOT NULL DEFAULT false,
+  recurrence_type TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 8.3. FORNECEDORES & TRANSPORTADORAS
+CREATE TABLE IF NOT EXISTS public.financial_suppliers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  trade_name TEXT,
+  document TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  email TEXT,
+  address TEXT,
+  carrier_name TEXT,
+  category TEXT NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 8.4. MERCADORIAS & ESTOQUE
+CREATE TABLE IF NOT EXISTS public.financial_merchandise (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  supplier_id UUID,
+  supplier_name TEXT,
+  carrier_name TEXT,
+  quantity NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  min_quantity NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  unit TEXT NOT NULL DEFAULT 'un',
+  cost_price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+  sale_price NUMERIC(10, 2),
+  total_cost NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+  last_restock_date DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 8.5. POLÍTICA DE SINAL / ANTECIPAÇÃO
+CREATE TABLE IF NOT EXISTS public.financial_deposit_configs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL UNIQUE REFERENCES public.tenants(id) ON DELETE CASCADE,
+  enabled BOOLEAN NOT NULL DEFAULT false,
+  type TEXT NOT NULL DEFAULT 'percentage',
+  value NUMERIC(10, 2) NOT NULL DEFAULT 30.00,
+  pix_key TEXT,
+  pix_key_type TEXT,
+  require_pix_receipt BOOLEAN NOT NULL DEFAULT true,
+  instructions TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ÍNDICES FINANCEIROS
+CREATE INDEX IF NOT EXISTS idx_receivables_tenant_status ON public.financial_receivables(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_receivables_tenant_due ON public.financial_receivables(tenant_id, due_date);
+CREATE INDEX IF NOT EXISTS idx_payables_tenant_status ON public.financial_payables(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_payables_tenant_due ON public.financial_payables(tenant_id, due_date);
+CREATE INDEX IF NOT EXISTS idx_suppliers_tenant ON public.financial_suppliers(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_merchandise_tenant ON public.financial_merchandise(tenant_id);
+
+-- POLÍTICAS RLS (ROW LEVEL SECURITY)
+ALTER TABLE public.financial_receivables ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.financial_payables ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.financial_suppliers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.financial_merchandise ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.financial_deposit_configs ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "Tenant isolation for financial_receivables"
+    ON public.financial_receivables FOR ALL
+    USING (tenant_id = (SELECT tenant_id FROM public.profiles WHERE user_id = auth.uid()));
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Tenant isolation for financial_payables"
+    ON public.financial_payables FOR ALL
+    USING (tenant_id = (SELECT tenant_id FROM public.profiles WHERE user_id = auth.uid()));
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Tenant isolation for financial_suppliers"
+    ON public.financial_suppliers FOR ALL
+    USING (tenant_id = (SELECT tenant_id FROM public.profiles WHERE user_id = auth.uid()));
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Tenant isolation for financial_merchandise"
+    ON public.financial_merchandise FOR ALL
+    USING (tenant_id = (SELECT tenant_id FROM public.profiles WHERE user_id = auth.uid()));
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Tenant isolation for financial_deposit_configs"
+    ON public.financial_deposit_configs FOR ALL
+    USING (tenant_id = (SELECT tenant_id FROM public.profiles WHERE user_id = auth.uid()));
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
 -- FIM DA MIGRATION SUPABASE

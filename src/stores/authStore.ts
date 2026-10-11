@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Profile, Tenant, UserRole } from '../types';
 import { initialTenant, initialProfiles } from '../services/mockData';
+import { isSupabaseConfigured } from '../services/supabase';
+import { authApiService } from '../services/api/authService';
 
 interface AuthState {
   user: { id: string; email: string } | null;
@@ -8,7 +10,7 @@ interface AuthState {
   tenant: Tenant | null;
   loading: boolean;
   initialize: () => Promise<void>;
-  login: (email: string, role?: UserRole) => Promise<boolean>;
+  login: (email: string, password?: string, role?: UserRole) => Promise<{ success: boolean; message?: string }>;
   quickLogin: (role: UserRole) => void;
   logout: () => void;
   setTenant: (tenant: Tenant) => void;
@@ -57,27 +59,71 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  login: async (email: string, role: UserRole = 'owner') => {
-    const matchedProfile =
-      initialProfiles.find((p) => p.email.toLowerCase() === email.toLowerCase()) || {
-        ...initialProfiles[0],
-        email,
-        full_name: email.split('@')[0].toUpperCase(),
-        role,
+  login: async (email: string, password = '', role: UserRole = 'owner') => {
+    // 1. Tenta autenticação real com o Supabase caso configurado
+    if (isSupabaseConfigured() && password) {
+      try {
+        const { user, profile, tenant } = await authApiService.signIn(email, password);
+        const userObj = { id: user.id, email: user.email };
+        localStorage.setItem('agenda_ai_user', JSON.stringify(userObj));
+        if (profile) localStorage.setItem('agenda_ai_profile', JSON.stringify(profile));
+        if (tenant) localStorage.setItem('agenda_ai_tenant', JSON.stringify(tenant));
+
+        set({
+          user: userObj,
+          profile: profile || initialProfiles[0],
+          tenant: tenant || initialTenant,
+        });
+        return { success: true };
+      } catch (err: any) {
+        console.warn('Falha no Supabase signIn:', err);
+        return {
+          success: false,
+          message: err?.message || 'E-mail ou senha incorretos no Supabase.',
+        };
+      }
+    }
+
+    // 2. Validação do Modo Demonstração / Local
+    if (!password || password.length < 4) {
+      return {
+        success: false,
+        message: 'A senha informada deve possuir no mínimo 4 caracteres.',
       };
+    }
 
-    const userObj = { id: matchedProfile.user_id, email: matchedProfile.email };
+    const isDemoEmail =
+      email.toLowerCase() === 'admin@agendaai.com' ||
+      email.toLowerCase().includes('demo') ||
+      email.toLowerCase().includes('admin');
 
-    localStorage.setItem('agenda_ai_user', JSON.stringify(userObj));
-    localStorage.setItem('agenda_ai_profile', JSON.stringify(matchedProfile));
-    localStorage.setItem('agenda_ai_tenant', JSON.stringify(initialTenant));
+    if (isDemoEmail || password === '123456') {
+      const matchedProfile =
+        initialProfiles.find((p) => p.email.toLowerCase() === email.toLowerCase()) || {
+          ...initialProfiles[0],
+          email,
+          full_name: email.split('@')[0].toUpperCase(),
+          role,
+        };
 
-    set({
-      user: userObj,
-      profile: matchedProfile,
-      tenant: initialTenant,
-    });
-    return true;
+      const userObj = { id: matchedProfile.user_id, email: matchedProfile.email };
+
+      localStorage.setItem('agenda_ai_user', JSON.stringify(userObj));
+      localStorage.setItem('agenda_ai_profile', JSON.stringify(matchedProfile));
+      localStorage.setItem('agenda_ai_tenant', JSON.stringify(initialTenant));
+
+      set({
+        user: userObj,
+        profile: matchedProfile,
+        tenant: initialTenant,
+      });
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      message: 'Credenciais inválidas. Para testar localmente, utilize admin@agendaai.com (senha: 123456) ou clique nos botões de Acesso Rápido abaixo.',
+    };
   },
 
   quickLogin: (role: UserRole) => {

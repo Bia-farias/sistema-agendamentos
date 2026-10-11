@@ -16,12 +16,17 @@ import {
 } from '../types/financeiro';
 import { getTodayDateString } from '../services/mockData';
 import { useProfessionalStore } from './professionalStore';
+import { financialApiService } from '../services/api/financialService';
+import { isSupabaseConfigured } from '../services/supabase';
+import { useAuthStore } from './authStore';
 
 const STORAGE_KEY = 'agenda_ai_financial_v2';
 
-// Clear legacy v1 mock cache if present
+// Clear legacy v1 mock cache if present safely
 try {
-  localStorage.removeItem('agenda_ai_financial_v1');
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('agenda_ai_financial_v1');
+  }
 } catch (_) {}
 
 // Initial clean data without fictitious mock records
@@ -159,8 +164,10 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
   // Load saved state or default
   let savedData: any = null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) savedData = JSON.parse(raw);
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) savedData = JSON.parse(raw);
+    }
   } catch (e) {
     console.error('Erro ao ler estado financeiro:', e);
   }
@@ -183,7 +190,9 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       depositConfig: data.depositConfig || current.depositConfig,
     };
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      }
     } catch (e) {
       console.error('Erro ao salvar estado financeiro:', e);
     }
@@ -222,6 +231,14 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       const updated = [newRec, ...get().receivables];
       persist({ receivables: updated });
       set({ receivables: updated });
+
+      if (isSupabaseConfigured()) {
+        const tenantId = useAuthStore.getState().tenant?.id || 'tenant-1';
+        financialApiService.createReceivable(data, tenantId).catch((err) => {
+          console.warn('Sync criação de recebível no Supabase:', err);
+        });
+      }
+
       return newRec;
     },
 
@@ -229,10 +246,18 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       const updated = get().receivables.map((r) => (r.id === id ? { ...r, ...data } : r));
       persist({ receivables: updated });
       set({ receivables: updated });
+
+      if (isSupabaseConfigured()) {
+        financialApiService.updateReceivable(id, data).catch((err) => {
+          console.warn('Sync atualização de recebível no Supabase:', err);
+        });
+      }
     },
 
     markReceivablePaid: (id, method) => {
       const today = getTodayDateString();
+      const rec = get().receivables.find((r) => r.id === id);
+      const paymentMethod = method || rec?.payment_method || 'pix';
       const updated = get().receivables.map((r) => {
         if (r.id === id) {
           return {
@@ -240,19 +265,36 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
             status: 'paid' as ReceivableStatus,
             amount_paid: r.final_amount,
             paid_at: today,
-            payment_method: method || r.payment_method,
+            payment_method: paymentMethod,
           };
         }
         return r;
       });
       persist({ receivables: updated });
       set({ receivables: updated });
+
+      if (isSupabaseConfigured() && rec) {
+        financialApiService.updateReceivable(id, {
+          status: 'paid',
+          amount_paid: rec.final_amount,
+          paid_at: today,
+          payment_method: paymentMethod,
+        }).catch((err) => {
+          console.warn('Sync baixa de recebível no Supabase:', err);
+        });
+      }
     },
 
     deleteReceivable: (id) => {
       const updated = get().receivables.filter((r) => r.id !== id);
       persist({ receivables: updated });
       set({ receivables: updated });
+
+      if (isSupabaseConfigured()) {
+        financialApiService.deleteReceivable(id).catch((err) => {
+          console.warn('Sync exclusão de recebível no Supabase:', err);
+        });
+      }
     },
 
     // Payables
@@ -266,6 +308,14 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       const updated = [newPay, ...get().payables];
       persist({ payables: updated });
       set({ payables: updated });
+
+      if (isSupabaseConfigured()) {
+        const tenantId = useAuthStore.getState().tenant?.id || 'tenant-1';
+        financialApiService.createPayable(data, tenantId).catch((err) => {
+          console.warn('Sync criação de conta a pagar no Supabase:', err);
+        });
+      }
+
       return newPay;
     },
 
@@ -273,10 +323,18 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       const updated = get().payables.map((p) => (p.id === id ? { ...p, ...data } : p));
       persist({ payables: updated });
       set({ payables: updated });
+
+      if (isSupabaseConfigured()) {
+        financialApiService.updatePayable(id, data).catch((err) => {
+          console.warn('Sync atualização de conta a pagar no Supabase:', err);
+        });
+      }
     },
 
     markPayablePaid: (id, method) => {
       const today = getTodayDateString();
+      const pay = get().payables.find((p) => p.id === id);
+      const paymentMethod = method || pay?.payment_method || 'pix';
       const updated = get().payables.map((p) => {
         if (p.id === id) {
           return {
@@ -284,19 +342,36 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
             status: 'paid' as PayableStatus,
             paid_amount: p.amount,
             paid_at: today,
-            payment_method: method || p.payment_method || 'pix',
+            payment_method: paymentMethod,
           };
         }
         return p;
       });
       persist({ payables: updated });
       set({ payables: updated });
+
+      if (isSupabaseConfigured() && pay) {
+        financialApiService.updatePayable(id, {
+          status: 'paid',
+          paid_amount: pay.amount,
+          paid_at: today,
+          payment_method: paymentMethod,
+        }).catch((err) => {
+          console.warn('Sync baixa de conta a pagar no Supabase:', err);
+        });
+      }
     },
 
     deletePayable: (id) => {
       const updated = get().payables.filter((p) => p.id !== id);
       persist({ payables: updated });
       set({ payables: updated });
+
+      if (isSupabaseConfigured()) {
+        financialApiService.deletePayable(id).catch((err) => {
+          console.warn('Sync exclusão de conta a pagar no Supabase:', err);
+        });
+      }
     },
 
     // Suppliers

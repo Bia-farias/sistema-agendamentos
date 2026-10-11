@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useFinancialStore } from '../../stores/financialStore';
+import { useAuthStore } from '../../stores/authStore';
+import { useProfessionalStore } from '../../stores/professionalStore';
 import { useUIStore } from '../../stores/uiStore';
 import { formatCurrency } from '../../utils/format';
 import { createWhatsAppLink } from '../../services/whatsapp';
@@ -17,6 +19,8 @@ import {
 
 export function ComissoesTab() {
   const { getCommissionSummaries, payCommission } = useFinancialStore();
+  const { tenant } = useAuthStore();
+  const { professionals } = useProfessionalStore();
   const { addToast } = useUIStore();
 
   const summaries = getCommissionSummaries();
@@ -54,8 +58,12 @@ export function ComissoesTab() {
   };
 
   const handleSendReportWhatsApp = (summary: (typeof summaries)[0]) => {
+    const prof = professionals.find((p) => p.id === summary.professional_id);
+    const profPhone = prof?.phone || '';
+    const establishmentName = tenant?.name || 'Estabelecimento';
+
     let msg = `Olá, *${summary.professional_name}*! 👋\n\n`;
-    msg += `Aqui está o seu demonstrativo de comissões do período no *Studio Prime*:\n\n`;
+    msg += `Aqui está o seu demonstrativo de comissões do período no *${establishmentName}*:\n\n`;
     msg += `✂️ *Atendimentos Realizados:* ${summary.appointments_count}\n`;
     msg += `💰 *Faturamento Gerado:* ${formatCurrency(summary.total_revenue)}\n`;
     msg += `📊 *Taxa de Comissão:* ${summary.commission_percentage}%\n`;
@@ -64,7 +72,7 @@ export function ComissoesTab() {
     msg += `⏳ *Saldo a Receber:* *${formatCurrency(summary.commission_pending)}*\n\n`;
     msg += `Qualquer dúvida sobre os atendimentos, estamos à disposição na recepção! ✨`;
 
-    const link = createWhatsAppLink('11999999999', msg);
+    const link = createWhatsAppLink(profPhone, msg);
     window.open(link, '_blank', 'noopener,noreferrer');
 
     addToast({

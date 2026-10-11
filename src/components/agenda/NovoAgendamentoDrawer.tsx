@@ -12,6 +12,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Calendar, Clock, User, Scissors, DollarSign, Plus, Check, MessageCircle, ShieldCheck } from 'lucide-react';
 import { formatCurrency } from '../../utils/format';
+import { maskPhone } from '../../utils/masks';
 import { openWhatsAppForAppointment } from '../../services/whatsapp';
 import { getTodayDateString } from '../../services/mockData';
 
@@ -337,7 +338,7 @@ export function NovoAgendamentoDrawer() {
                 label="WhatsApp / Celular"
                 placeholder="(11) 99999-9999"
                 value={newCustomerPhone}
-                onChange={(e) => setNewCustomerPhone(e.target.value)}
+                onChange={(e) => setNewCustomerPhone(maskPhone(e.target.value))}
                 required
               />
             </div>

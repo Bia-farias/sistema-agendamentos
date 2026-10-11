@@ -4,6 +4,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { Drawer } from '../ui/Drawer';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { maskPhone } from '../../utils/masks';
 import { Check, User, Phone, Mail, Calendar, Sparkles } from 'lucide-react';
 
 export function NovoClienteDrawer() {
@@ -147,7 +148,7 @@ export function NovoClienteDrawer() {
             label="WhatsApp / Celular *"
             placeholder="(11) 99999-9999"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(maskPhone(e.target.value))}
             leftIcon={<Phone size={16} />}
             required
           />

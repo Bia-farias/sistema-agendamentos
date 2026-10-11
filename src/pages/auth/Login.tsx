@@ -29,16 +29,32 @@ export default function Login() {
     }
 
     setIsLoading(true);
-    setTimeout(async () => {
-      await login(email);
+    try {
+      const res = await login(email, password);
+      setIsLoading(false);
+
+      if (res.success) {
+        addToast({
+          type: 'success',
+          title: 'Bem-vindo de volta!',
+          message: 'Acesso realizado com sucesso.',
+        });
+        navigate('/dashboard');
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Falha no Acesso',
+          message: res.message || 'Credenciais inválidas.',
+        });
+      }
+    } catch (err: any) {
       setIsLoading(false);
       addToast({
-        type: 'success',
-        title: 'Bem-vindo de volta!',
-        message: 'Acesso realizado com sucesso.',
+        type: 'error',
+        title: 'Erro de Conexão',
+        message: err?.message || 'Não foi possível validar as credenciais.',
       });
-      navigate('/dashboard');
-    }, 600);
+    }
   };
 
   const handleDemoLogin = (role: UserRole) => {

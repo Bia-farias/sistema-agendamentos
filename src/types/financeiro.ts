@@ -65,6 +65,8 @@ export interface Payable {
   paid_at?: string;
   professional_id?: string;
   professional_name?: string;
+  is_recurring?: boolean;
+  recurrence_type?: string;
   notes?: string;
   created_at: string;
 }

@@ -28,6 +28,7 @@ import { useFinancialStore } from '../stores/financialStore';
 import { useUIStore } from '../stores/uiStore';
 import { Service, Professional, Appointment } from '../types';
 import { formatCurrency, formatDate } from '../utils/format';
+import { maskPhone } from '../utils/masks';
 import { getTodayDateString } from '../services/mockData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -68,9 +69,9 @@ export default function AgendamentoCliente() {
   const [createdAppointment, setCreatedAppointment] = useState<Appointment | null>(null);
 
   // Estabelecimento info
-  const establishmentName = tenant?.name || 'Studio & Estética Prime';
-  const establishmentPhone = tenant?.phone || '11999998888';
-  const establishmentAddress = tenant?.address || 'Av. Paulista, 1000 - São Paulo, SP';
+  const establishmentName = tenant?.name || 'Meu Estabelecimento';
+  const establishmentPhone = tenant?.phone || '';
+  const establishmentAddress = tenant?.address || '';
   const allowBooking = tenant?.settings?.allow_online_booking ?? true;
 
   // Filtragem de serviços ativos
@@ -773,7 +774,7 @@ export default function AgendamentoCliente() {
                 </label>
                 <Input
                   value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  onChange={(e) => setCustomerPhone(maskPhone(e.target.value))}
                   placeholder="Ex: (11) 98765-4321"
                   required
                 />

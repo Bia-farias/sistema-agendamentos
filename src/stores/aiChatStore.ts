@@ -71,14 +71,14 @@ function buildSystemPrompt(): string {
     .map((c) => `  - ${c.name} | Última visita: ${c.last_visit_at || 'desconhecida'} | Telefone: ${c.phone}`)
     .join('\n');
 
-  return `Você é o Assistente IA do sistema "${tenant?.name || 'Studio Prime & Estética'}", um software de gestão de agendamentos para salões de beleza, barbearias e clínicas estéticas.
+  return `Você é o Assistente IA do sistema "${tenant?.name || 'Meu Estabelecimento'}", um software de gestão de agendamentos para salões de beleza, barbearias e clínicas estéticas.
 
 Você tem acesso em tempo real aos dados do negócio e deve responder de forma amigável, profissional e contextualizada em português brasileiro. Use emojis com moderação para tornar as respostas mais visuais.
 
 == CONTEXTO ATUAL ==
 
 📅 Data e hora atual: ${dateStr} às ${timeStr}
-🏪 Estabelecimento: ${tenant?.name || 'Studio Prime & Estética'} (${tenant?.business_type || 'salão de beleza'})
+🏪 Estabelecimento: ${tenant?.name || 'Meu Estabelecimento'} (${tenant?.business_type || 'salão de beleza'})
 📞 Telefone: ${tenant?.phone || 'não cadastrado'}
 📧 E-mail: ${tenant?.email || 'não cadastrado'}
 🏠 Endereço: ${tenant?.address || 'não cadastrado'}

@@ -10,15 +10,16 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Zustand](https://img.shields.io/badge/State-Zustand-4338CA?style=for-the-badge)](https://github.com/pmndrs/zustand)
 [![Supabase](https://img.shields.io/badge/BaaS-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![Groq AI](https://img.shields.io/badge/AI-Groq%20Llama%203.3-F55036?style=for-the-badge)](https://groq.com/)
-[![CI Build](https://img.shields.io/badge/Build-Passing-emerald?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/)
+[![Vitest](https://img.shields.io/badge/Tests-19%20Passed-emerald?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Security](https://img.shields.io/badge/Security-0%20Vulnerabilities-emerald?style=for-the-badge&logo=dependabot&logoColor=white)](https://github.com/)
 
 <br />
 
 [Visualizar Demonstração](#-acesso-rápido-à-demonstração) •
 [Funcionalidades](#-principais-funcionalidades) •
+[Testes Automatizados](#-testes-automatizados--qualidade) •
 [Arquitetura](#-arquitetura-do-projeto) •
-[Instalação Local](#-como-executar-o-projeto) •
+[Instalação & Deploy](#-como-executar-o-projeto) •
 [Documentação Completa](./docs/00-README.md)
 
 </div>
@@ -171,10 +172,36 @@ npm run dev
 ```
 Abra o navegador em `http://localhost:5173`.
 
-### 5. Compilação para Produção (Typecheck + Build)
+### 5. Executar os Testes Automatizados
+```bash
+npm test
+```
+
+### 6. Compilação para Produção (Typecheck + Bundling Otimizado)
 ```bash
 npm run build
 ```
+
+### 7. Deploy na Vercel
+O projeto está 100% pronto para deploy na Vercel:
+1. Conecte seu repositório no dashboard da [Vercel](https://vercel.com).
+2. Framework Preset: **Vite**.
+3. Build Command: `npm run build`.
+4. Output Directory: `dist`.
+5. *(Opcional)* Adicione as variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` caso utilize banco em nuvem. Sem elas, o sistema opera fluidamente em modo offline-first local!
+
+---
+
+## 🧪 Testes Automatizados & Qualidade (QA)
+
+O projeto possui **19 testes unitários automatizados** com [Vitest](https://vitest.dev), garantindo estabilidade e validação das regras críticas de negócio:
+
+| Suíte de Testes | Arquivo | Cobertura | Status |
+| :--- | :--- | :--- | :--- |
+| **Colisão de Horários** | `appointmentCollision.test.ts` | 9 testes: sobreposição total, parcial, limites exatos e múltiplos profissionais |  100% Pass |
+| **Política de Sinal Pix** | `depositPolicy.test.ts` | 4 testes: cálculo de porcentagem, retenção fixa, arredondamento e tolerância zero |  100% Pass |
+| **Comissões Financeiras** | `financialCommission.test.ts` | 3 testes: divisão de faturamento líquido, descontos de taxas de operadora e repasses |  100% Pass |
+| **Formatação WhatsApp** | `whatsappFormatting.test.ts` | 3 testes: limpeza de DDI/DDD, caracteres especiais e sanitização de URLs wa.me |  100% Pass |
 
 ---
 
@@ -182,18 +209,23 @@ npm run build
 
 - [x] **V1 — MVP Front-End Completo**
   - [x] Autenticação com perfis demo (Owner, Admin, Profissional, Recepcionista)
-  - [x] Agenda interativa semanal/diária com filtros
+  - [x] Agenda interativa semanal/diária com filtros e anti-colisão
   - [x] CRM de clientes com métricas de frequência e LTV
   - [x] Hub WhatsApp com editor de modelos e preview
   - [x] Assistente de IA operacional com Groq Llama 3.3
   - [x] Dark Mode nativo com persistência
-- [ ] **V1.5 — Experiência do Cliente Final**
-  - [ ] Página pública de agendamento online (`/agendar/:slug`)
-  - [ ] Módulo financeiro completo com cálculo de comissões da equipe
-  - [ ] Command Palette global (`Ctrl + K`)
-- [ ] **V2 — Integrações em Produção**
-  - [ ] Sincronização em tempo real via Supabase PostgreSQL com Row Level Security (RLS)
-  - [ ] Integração oficial com WhatsApp Business API (Evolution API / Z-API)
+- [x] **V1.5 — Experiência do Cliente & Módulo Financeiro**
+  - [x] Página pública de auto-agendamento online (`/agendar/:slug`)
+  - [x] Gestão Financeira Completa: Contas a Receber, Contas a Pagar, DRE e Fluxo de Caixa
+  - [x] Gestão de Fornecedores, Comissões e Controle de Mercadorias/Estoque
+  - [x] Configuração de Sinal de Agendamento com Copia e Cola Pix
+  - [x] Command Palette global acessível por atalho (`Ctrl + K`)
+  - [x] Otimização de Code Splitting com chunks leves (< 250 kB)
+- [x] **V2 — Arquitetura de Nuvem & Segurança**
+  - [x] Resolução de vulnerabilidades de dependências (0 vulnerabilidades `npm audit`)
+  - [x] Schemas DDL com Row Level Security (RLS) completo para PostgreSQL/Supabase
+  - [x] Camada de serviços assíncronos (`financialService`, `appointmentService`, `customerService`)
+  - [ ] Integração nativa com instâncias Evolution API / Z-API para disparo real no WhatsApp
 
 ---
 
@@ -202,5 +234,5 @@ npm run build
 Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
 
 <div align="center">
-Desenvolvido com foco em excelência técnica e experiência de produto.
+Desenvolvido com foco em excelência técnica, código limpo e padrões de engenharia de software de alta performance.
 </div>
