@@ -140,6 +140,9 @@ const initialConnection: WhatsAppConnectionInfo = {
 };
 
 function loadSavedState() {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return null;
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -267,11 +270,14 @@ export const useWhatsAppStore = create<WhatsAppState>((set, get) => ({
   },
 
   openWhatsAppWeb: (phone, message) => {
-    const cleanPhone = phone.replace(/\D/g, '');
-    const fullPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+    let cleanPhone = (phone || '').replace(/\D/g, '').replace(/^0+/, '');
+    const fullPhone =
+      cleanPhone.startsWith('55') && cleanPhone.length >= 12
+        ? cleanPhone
+        : `55${cleanPhone}`;
     const encoded = encodeURIComponent(message);
-    const url = `https://wa.me/${fullPhone}?text=${encoded}`;
-    window.open(url, '_blank');
+    const url = `https://api.whatsapp.com/send?phone=${fullPhone}&text=${encoded}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   },
 
   runReactivation: (customerNames, templateId) => {

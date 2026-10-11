@@ -20,7 +20,11 @@ import {
   Scissors,
 } from 'lucide-react';
 import { formatCurrency, formatDate, formatPhone } from '../../utils/format';
-import { createWhatsAppLink, generateReactivationMessage } from '../../services/whatsapp';
+import {
+  createWhatsAppLink,
+  generateReactivationMessage,
+  openWhatsAppForAppointment,
+} from '../../services/whatsapp';
 
 export function ClienteDetalheDrawer() {
   const {
@@ -47,9 +51,37 @@ export function ClienteDetalheDrawer() {
   );
 
   const handleWhatsApp = () => {
-    const message = generateReactivationMessage(customer, tenant?.name || 'Studio Prime');
-    const link = createWhatsAppLink(customer.phone, message);
-    window.open(link, '_blank');
+    const upcomingApt = customerAppointments
+      .filter((a) => a.status !== 'cancelled' && a.status !== 'completed')
+      .sort((a, b) => (a.date + a.start_time).localeCompare(b.date + b.start_time))[0];
+
+    const lastApt = !upcomingApt
+      ? customerAppointments.sort((a, b) => (b.date + b.start_time).localeCompare(a.date + a.start_time))[0]
+      : undefined;
+
+    const targetApt = upcomingApt || lastApt;
+
+    if (targetApt) {
+      openWhatsAppForAppointment(
+        targetApt,
+        tenant?.name || 'Studio Prime',
+        targetApt.status === 'confirmed' ? 'confirmation' : 'reminder'
+      );
+      addToast({
+        type: 'success',
+        title: 'WhatsApp Aberto',
+        message: `Redirecionando com os dados do agendamento de ${customer.name}...`,
+      });
+    } else {
+      const message = generateReactivationMessage(customer, tenant?.name || 'Studio Prime');
+      const link = createWhatsAppLink(customer.phone, message);
+      window.open(link, '_blank', 'noopener,noreferrer');
+      addToast({
+        type: 'info',
+        title: 'WhatsApp Aberto',
+        message: `Iniciando conversa no WhatsApp com ${customer.name}...`,
+      });
+    }
   };
 
   const handleDelete = () => {
@@ -234,13 +266,34 @@ export function ClienteDetalheDrawer() {
                       <Calendar size={12} /> {formatDate(apt.date)} às {apt.start_time} • {apt.professional_name}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <span className="font-bold text-zinc-900 dark:text-zinc-100 block">
-                      {formatCurrency(apt.total_price)}
-                    </span>
-                    <span className="text-[10px] text-emerald-500 capitalize font-medium">
-                      {apt.status}
-                    </span>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100 block">
+                        {formatCurrency(apt.total_price)}
+                      </span>
+                      <span className="text-[10px] text-emerald-500 capitalize font-medium">
+                        {apt.status}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openWhatsAppForAppointment(
+                          apt,
+                          tenant?.name || 'Studio Prime',
+                          apt.status === 'confirmed' ? 'confirmation' : 'reminder'
+                        );
+                        addToast({
+                          type: 'success',
+                          title: 'WhatsApp Aberto',
+                          message: `Redirecionando com os dados do agendamento...`,
+                        });
+                      }}
+                      className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 transition-colors cursor-pointer"
+                      title="Enviar dados deste agendamento pelo WhatsApp"
+                    >
+                      <MessageCircle size={15} />
+                    </button>
                   </div>
                 </div>
               ))}

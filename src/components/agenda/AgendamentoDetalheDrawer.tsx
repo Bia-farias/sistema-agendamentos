@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useAppointmentStore } from '../../stores/appointmentStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useFinancialStore } from '../../stores/financialStore';
+import { useProfessionalStore } from '../../stores/professionalStore';
+import { PaymentMethod } from '../../types/financeiro';
+import { getTodayDateString } from '../../services/mockData';
 import { Drawer } from '../ui/Drawer';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -17,12 +21,17 @@ import {
   XCircle,
   Trash2,
   AlertCircle,
+  Coins,
+  CreditCard,
+  Check,
 } from 'lucide-react';
 import { formatCurrency, formatDate, formatPhone } from '../../utils/format';
 import {
+  openWhatsAppForAppointment,
   createWhatsAppLink,
-  generateAppointmentReminderMessage,
   generateAppointmentConfirmationMessage,
+  generateAppointmentReminderMessage,
+  generateAppointmentDetailsMessage,
 } from '../../services/whatsapp';
 import { AppointmentStatus } from '../../types';
 
@@ -31,13 +40,36 @@ export function AgendamentoDetalheDrawer() {
     useAppointmentStore();
   const { tenant } = useAuthStore();
   const { addToast } = useUIStore();
+  const {
+    receivables,
+    markReceivablePaid,
+    addReceivable,
+    updateReceivable,
+    deleteReceivable,
+  } = useFinancialStore();
+  const { professionals } = useProfessionalStore();
 
   const isOpen = activeDrawer.type === 'detail';
   const appointment = appointments.find((a) => a.id === activeDrawer.appointmentId);
 
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('pix');
 
   if (!appointment) return null;
+
+  // Busca conta a receber associada a este agendamento
+  const receivable = receivables.find((r) => r.appointment_id === appointment.id);
+
+  // Calcula comissão do profissional
+  const professional = professionals.find(
+    (p) => p.id === appointment.professional_id || p.name === appointment.professional_name
+  );
+  const commissionRate = professional?.commission_percentage ?? 35;
+  const commissionAmount = Math.round((appointment.total_price * commissionRate) / 100);
+
+  const isPaid = receivable
+    ? receivable.status === 'paid'
+    : appointment.payment_method !== 'unpaid';
 
   const statusVariant: Record<AppointmentStatus, 'warning' | 'success' | 'info' | 'danger'> = {
     pending: 'warning',
@@ -55,37 +87,115 @@ export function AgendamentoDetalheDrawer() {
 
   const handleStatusChange = (status: AppointmentStatus) => {
     updateStatus(appointment.id, status);
+
+    const today = getTodayDateString();
+
+    if (status === 'completed') {
+      // Sincronização automática com o Contas a Receber
+      if (receivable) {
+        if (receivable.status !== 'paid') {
+          markReceivablePaid(receivable.id, selectedPaymentMethod || receivable.payment_method || 'pix');
+        }
+      } else {
+        // Se a conta a receber não existia, cria automaticamente como paga
+        addReceivable({
+          appointment_id: appointment.id,
+          customer_id: appointment.customer_id,
+          customer_name: appointment.customer_name,
+          customer_phone: appointment.customer_phone,
+          service_name: appointment.service_name,
+          professional_name: appointment.professional_name,
+          description: `Atendimento ${appointment.service_name}`,
+          original_amount: appointment.total_price,
+          discount: 0,
+          surcharge: 0,
+          final_amount: appointment.total_price,
+          amount_paid: appointment.total_price,
+          payment_method: selectedPaymentMethod,
+          due_date: appointment.date,
+          paid_at: today,
+          status: 'paid',
+          has_signal: false,
+        });
+      }
+
+      addToast({
+        type: 'success',
+        title: 'Atendimento Concluído! 🎉',
+        message: `Agendamento finalizado. A conta a receber foi dada como paga e a comissão de ${formatCurrency(commissionAmount)} (${commissionRate}%) foi gerada para ${appointment.professional_name}!`,
+      });
+    } else if (status === 'cancelled') {
+      if (receivable) {
+        updateReceivable(receivable.id, { status: 'cancelled' });
+      }
+      addToast({
+        type: 'info',
+        title: 'Agendamento Cancelado',
+        message: 'O atendimento e a respectiva cobrança no financeiro foram cancelados.',
+      });
+    } else if (status === 'confirmed' || status === 'pending') {
+      if (receivable && receivable.status === 'cancelled') {
+        updateReceivable(receivable.id, { status: 'pending' });
+      }
+      addToast({
+        type: 'success',
+        title: 'Status Atualizado',
+        message: `O agendamento agora está marcado como ${statusLabels[status]}.`,
+      });
+    }
+  };
+
+  const handleDirectPayment = () => {
+    const today = getTodayDateString();
+    if (receivable) {
+      markReceivablePaid(receivable.id, selectedPaymentMethod);
+    } else {
+      addReceivable({
+        appointment_id: appointment.id,
+        customer_id: appointment.customer_id,
+        customer_name: appointment.customer_name,
+        customer_phone: appointment.customer_phone,
+        service_name: appointment.service_name,
+        professional_name: appointment.professional_name,
+        description: `Atendimento ${appointment.service_name}`,
+        original_amount: appointment.total_price,
+        discount: 0,
+        surcharge: 0,
+        final_amount: appointment.total_price,
+        amount_paid: appointment.total_price,
+        payment_method: selectedPaymentMethod,
+        due_date: appointment.date,
+        paid_at: today,
+        status: 'paid',
+        has_signal: false,
+      });
+    }
+
     addToast({
       type: 'success',
-      title: 'Status Atualizado',
-      message: `O agendamento agora está marcado como ${statusLabels[status]}.`,
+      title: 'Pagamento Confirmado! 💰',
+      message: `Recebimento de ${formatCurrency(appointment.total_price)} registrado via ${selectedPaymentMethod.toUpperCase()}. Comissão de ${formatCurrency(commissionAmount)} gerada para ${appointment.professional_name}.`,
     });
   };
 
-  const handleWhatsAppReminder = () => {
-    const message = generateAppointmentReminderMessage(
-      appointment,
-      tenant?.name || 'Studio Prime'
-    );
-    const link = createWhatsAppLink(appointment.customer_phone, message);
-    window.open(link, '_blank');
-  };
-
-  const handleWhatsAppConfirmation = () => {
-    const message = generateAppointmentConfirmationMessage(
-      appointment,
-      tenant?.name || 'Studio Prime'
-    );
-    const link = createWhatsAppLink(appointment.customer_phone, message);
-    window.open(link, '_blank');
+  const handleSendWhatsApp = (type: 'confirmation' | 'reminder' | 'details' = 'confirmation') => {
+    openWhatsAppForAppointment(appointment, tenant?.name || 'Studio Prime', type);
+    addToast({
+      type: 'success',
+      title: 'WhatsApp Aberto',
+      message: `Redirecionando para envio da mensagem do agendamento para ${appointment.customer_name}...`,
+    });
   };
 
   const handleDelete = () => {
+    if (receivable) {
+      deleteReceivable(receivable.id);
+    }
     deleteAppointment(appointment.id);
     addToast({
       type: 'info',
       title: 'Agendamento Excluído',
-      message: 'O horário foi removido da sua agenda.',
+      message: 'O horário e suas movimentações financeiras foram removidos.',
     });
   };
 
@@ -152,9 +262,9 @@ export function AgendamentoDetalheDrawer() {
 
             {/* Quick WhatsApp Action Button */}
             <button
-              onClick={handleWhatsAppReminder}
-              className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 flex items-center gap-1.5 text-xs font-bold transition-all hover:scale-105"
-              title="Abrir conversa no WhatsApp"
+              onClick={() => handleSendWhatsApp('confirmation')}
+              className="p-2.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 flex items-center gap-1.5 text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              title="Abrir WhatsApp com mensagem e informações do agendamento"
             >
               <MessageCircle size={15} />
               WhatsApp
@@ -208,25 +318,88 @@ export function AgendamentoDetalheDrawer() {
           </div>
         </div>
 
-        {/* Financial & Price Card */}
-        <div className="p-4 rounded-xl bg-violet-50/20 dark:bg-[#181424] border border-violet-100/70 dark:border-violet-900/30 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-zinc-400 block font-medium">Valor do Atendimento</span>
-            <span className="text-xl font-extrabold text-zinc-900 dark:text-zinc-100">
-              {formatCurrency(appointment.total_price)}
+        {/* Financial & Commissions Integrated Card */}
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-50/60 to-indigo-50/30 dark:from-violet-950/20 dark:to-zinc-900 border border-violet-100/80 dark:border-violet-900/30 space-y-3.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wider flex items-center gap-1.5">
+              <DollarSign size={14} className="text-violet-500" />
+              Financeiro & Comissões
             </span>
+            <Badge
+              variant={
+                isPaid
+                  ? 'success'
+                  : receivable?.status === 'cancelled'
+                  ? 'danger'
+                  : 'warning'
+              }
+              dot
+            >
+              {isPaid
+                ? `Pago (${(receivable?.payment_method || appointment.payment_method || 'pix').toUpperCase()})`
+                : receivable?.status === 'cancelled'
+                ? 'Cobrança Cancelada'
+                : 'A Receber'}
+            </Badge>
           </div>
-          <Badge
-            variant={
-              appointment.payment_method === 'unpaid'
-                ? 'warning'
-                : 'success'
-            }
-          >
-            {appointment.payment_method === 'unpaid'
-              ? 'Pagamento Pendente'
-              : `Pago via ${appointment.payment_method?.toUpperCase()}`}
-          </Badge>
+
+          <div className="flex items-baseline justify-between pt-1">
+            <div>
+              <span className="text-xs text-zinc-400 block font-medium">Valor Total</span>
+              <span className="text-2xl font-black text-zinc-900 dark:text-zinc-50">
+                {formatCurrency(appointment.total_price)}
+              </span>
+            </div>
+
+            <div className="text-right">
+              <span className="text-[11px] text-zinc-400 block font-medium">
+                Comissão {commissionRate}% ({appointment.professional_name.split(' ')[0]})
+              </span>
+              <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center justify-end gap-1">
+                <Coins size={14} />
+                {formatCurrency(commissionAmount)}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Payment Action if Pending */}
+          {!isPaid && receivable?.status !== 'cancelled' ? (
+            <div className="pt-2 border-t border-violet-100/70 dark:border-violet-900/30 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-zinc-600 dark:text-zinc-400">
+                  Forma de Recebimento:
+                </span>
+                <select
+                  value={selectedPaymentMethod}
+                  onChange={(e) => setSelectedPaymentMethod(e.target.value as PaymentMethod)}
+                  className="px-2.5 py-1 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-medium focus:ring-1 focus:ring-violet-500"
+                >
+                  <option value="pix">Pix Instantâneo</option>
+                  <option value="dinheiro">Dinheiro em Espécie</option>
+                  <option value="debito">Cartão de Débito</option>
+                  <option value="credito">Cartão de Crédito</option>
+                  <option value="transferencia">Transferência</option>
+                </select>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDirectPayment}
+                className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-600/20 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+              >
+                <Check size={14} />
+                Confirmar Recebimento e Gerar Comissão
+              </button>
+            </div>
+          ) : isPaid ? (
+            <div className="pt-2 border-t border-emerald-100/70 dark:border-emerald-900/30 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400 font-medium bg-emerald-50/50 dark:bg-emerald-950/20 px-2.5 py-1.5 rounded-lg">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 size={13} />
+                Recebido em {formatDate(receivable?.paid_at || appointment.date)}
+              </span>
+              <span className="font-bold">Comissão lançada</span>
+            </div>
+          ) : null}
         </div>
 
         {/* Notes */}
@@ -288,30 +461,67 @@ export function AgendamentoDetalheDrawer() {
           </span>
           <div className="space-y-2">
             <button
-              onClick={handleWhatsAppReminder}
-              className="w-full text-left p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20 transition-all flex items-center justify-between text-xs group"
+              onClick={() => handleSendWhatsApp('confirmation')}
+              className="w-full text-left p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20 transition-all flex items-center justify-between text-xs group cursor-pointer"
             >
-              <div className="flex items-center gap-2">
-                <MessageCircle size={16} className="text-emerald-500" />
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                  Enviar Lembrete de Horário
-                </span>
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600">
+                  <CheckCircle2 size={15} />
+                </div>
+                <div>
+                  <span className="font-bold text-zinc-800 dark:text-zinc-200 block">
+                    Enviar Confirmação de Agendamento
+                  </span>
+                  <span className="text-[11px] text-zinc-400">
+                    Mensagem com dia, horário, profissional e serviço
+                  </span>
+                </div>
               </div>
-              <span className="text-zinc-400 group-hover:text-emerald-500 font-medium">
+              <span className="text-emerald-600 font-bold group-hover:translate-x-0.5 transition-transform">
                 Enviar &rarr;
               </span>
             </button>
+
             <button
-              onClick={handleWhatsAppConfirmation}
-              className="w-full text-left p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20 transition-all flex items-center justify-between text-xs group"
+              onClick={() => handleSendWhatsApp('reminder')}
+              className="w-full text-left p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20 transition-all flex items-center justify-between text-xs group cursor-pointer"
             >
-              <div className="flex items-center gap-2">
-                <MessageCircle size={16} className="text-emerald-500" />
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                  Enviar Confirmação de Presença
-                </span>
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600">
+                  <Clock size={15} />
+                </div>
+                <div>
+                  <span className="font-bold text-zinc-800 dark:text-zinc-200 block">
+                    Enviar Lembrete de Horário
+                  </span>
+                  <span className="text-[11px] text-zinc-400">
+                    Solicita resposta rápida (1 Confirmar / 2 Remarcar)
+                  </span>
+                </div>
               </div>
-              <span className="text-zinc-400 group-hover:text-emerald-500 font-medium">
+              <span className="text-emerald-600 font-bold group-hover:translate-x-0.5 transition-transform">
+                Enviar &rarr;
+              </span>
+            </button>
+
+            <button
+              onClick={() => handleSendWhatsApp('details')}
+              className="w-full text-left p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20 transition-all flex items-center justify-between text-xs group cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600">
+                  <MessageCircle size={15} />
+                </div>
+                <div>
+                  <span className="font-bold text-zinc-800 dark:text-zinc-200 block">
+                    Enviar Detalhes Completos com Valor
+                  </span>
+                  <span className="text-[11px] text-zinc-400">
+                    Resumo detalhado com valor e forma de pagamento
+                  </span>
+                </div>
+              </div>
+              <span className="text-emerald-600 font-bold group-hover:translate-x-0.5 transition-transform">
                 Enviar &rarr;
               </span>
             </button>

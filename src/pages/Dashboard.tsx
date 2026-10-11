@@ -16,6 +16,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useAppointmentStore } from '../stores/appointmentStore';
 import { useCustomerStore } from '../stores/customerStore';
 import { useServiceStore } from '../stores/serviceStore';
+import { useUIStore } from '../stores/uiStore';
 import { StatsCard } from '../components/ui/StatsCard';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -23,12 +24,14 @@ import { Button } from '../components/ui/Button';
 import { Avatar } from '../components/ui/Avatar';
 import { EmptyState } from '../components/ui/EmptyState';
 import { formatCurrency, formatDate, formatPhone } from '../utils/format';
+import { openWhatsAppForAppointment } from '../services/whatsapp';
 import { AppointmentStatus } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { tenant, profile } = useAuthStore();
+  const { addToast } = useUIStore();
   const {
     appointments,
     getKPIs,
@@ -221,11 +224,35 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-200/50 dark:border-zinc-800">
+                    <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-200/50 dark:border-zinc-800">
                       <span className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100 font-mono">
                         {formatCurrency(apt.total_price)}
                       </span>
-                      <span className="text-xs text-violet-500 font-semibold group-hover:translate-x-1 transition-transform flex items-center gap-1">
+
+                      {/* Botão Whats: API de redirecionamento com informações do agendamento */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openWhatsAppForAppointment(
+                            apt,
+                            tenant?.name || 'Studio Prime',
+                            apt.status === 'confirmed' ? 'confirmation' : 'reminder'
+                          );
+                          addToast({
+                            type: 'success',
+                            title: 'WhatsApp Aberto',
+                            message: `Redirecionando com as informações do agendamento de ${apt.customer_name}...`,
+                          });
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-600 dark:hover:text-white border border-emerald-200/80 dark:border-emerald-800/60 transition-all duration-150 flex items-center gap-1.5 text-xs font-bold shadow-xs hover:shadow-sm cursor-pointer"
+                        title="Enviar dados do agendamento pelo WhatsApp"
+                      >
+                        <MessageCircle size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400 group-hover/btn:text-white" />
+                        <span>WhatsApp</span>
+                      </button>
+
+                      <span className="text-xs text-violet-500 font-semibold group-hover:translate-x-1 transition-transform flex items-center gap-1 ml-1">
                         Detalhes &rarr;
                       </span>
                     </div>

@@ -11,6 +11,10 @@ dist-ssr/
 
 # Variáveis de Ambiente (NUNCA commitar .env real)
 .env
+.env.*
+*.env
+**/.env
+**/.env.*
 .env.local
 .env.development.local
 .env.test.local

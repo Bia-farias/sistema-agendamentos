@@ -16,7 +16,10 @@ const Agenda = React.lazy(() => import('./pages/Agenda'));
 const Clientes = React.lazy(() => import('./pages/Clientes'));
 const Servicos = React.lazy(() => import('./pages/Servicos'));
 const Profissionais = React.lazy(() => import('./pages/Profissionais'));
+const Financeiro = React.lazy(() => import('./pages/Financeiro'));
 const WhatsApp = React.lazy(() => import('./pages/WhatsApp'));
+const Configuracoes = React.lazy(() => import('./pages/Configuracoes'));
+const AgendamentoCliente = React.lazy(() => import('./pages/AgendamentoCliente'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 
 export default function App() {
@@ -43,6 +46,10 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/site" element={<LandingPage />} />
 
+          {/* Página Pública de Agendamento Online para Clientes */}
+          <Route path="/agendar" element={<AgendamentoCliente />} />
+          <Route path="/agendar/:slug" element={<AgendamentoCliente />} />
+
           {/* Public Auth Routes */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
@@ -63,7 +70,9 @@ export default function App() {
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/servicos" element={<Servicos />} />
             <Route path="/profissionais" element={<Profissionais />} />
+            <Route path="/financeiro" element={<Financeiro />} />
             <Route path="/whatsapp" element={<WhatsApp />} />
+            <Route path="/configuracoes" element={<Configuracoes />} />
           </Route>
 
           {/* Fallback */}

@@ -23,10 +23,18 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import { formatCurrency, formatDate, formatPhone } from '../utils/format';
-import { createWhatsAppLink, generateReactivationMessage } from '../services/whatsapp';
+import {
+  createWhatsAppLink,
+  generateReactivationMessage,
+  openWhatsAppForAppointment,
+} from '../services/whatsapp';
+import { useAppointmentStore } from '../stores/appointmentStore';
+import { useUIStore } from '../stores/uiStore';
 
 export default function Clientes() {
   const { tenant } = useAuthStore();
+  const { appointments } = useAppointmentStore();
+  const { addToast } = useUIStore();
   const {
     searchQuery,
     setSearchQuery,
@@ -64,9 +72,43 @@ export default function Clientes() {
 
   const handleDirectWhatsApp = (e: React.MouseEvent, customer: any) => {
     e.stopPropagation();
-    const message = generateReactivationMessage(customer, tenant?.name || 'Studio Prime');
-    const link = createWhatsAppLink(customer.phone, message);
-    window.open(link, '_blank');
+
+    // Localiza agendamento futuro ou o mais recente do cliente
+    const customerApts = appointments.filter(
+      (a) => a.customer_id === customer.id || a.customer_phone === customer.phone
+    );
+
+    const upcomingApt = customerApts
+      .filter((a) => a.status !== 'cancelled' && a.status !== 'completed')
+      .sort((a, b) => (a.date + a.start_time).localeCompare(b.date + b.start_time))[0];
+
+    const lastApt = !upcomingApt
+      ? customerApts.sort((a, b) => (b.date + b.start_time).localeCompare(a.date + a.start_time))[0]
+      : undefined;
+
+    const targetApt = upcomingApt || lastApt;
+
+    if (targetApt) {
+      openWhatsAppForAppointment(
+        targetApt,
+        tenant?.name || 'Studio Prime',
+        targetApt.status === 'confirmed' ? 'confirmation' : 'reminder'
+      );
+      addToast({
+        type: 'success',
+        title: 'WhatsApp Aberto',
+        message: `Redirecionando com os dados do agendamento de ${customer.name}...`,
+      });
+    } else {
+      const message = generateReactivationMessage(customer, tenant?.name || 'Studio Prime');
+      const link = createWhatsAppLink(customer.phone, message);
+      window.open(link, '_blank', 'noopener,noreferrer');
+      addToast({
+        type: 'info',
+        title: 'WhatsApp Aberto',
+        message: `Iniciando conversa no WhatsApp com ${customer.name}...`,
+      });
+    }
   };
 
   return (

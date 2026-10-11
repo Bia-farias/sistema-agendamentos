@@ -1,8 +1,11 @@
 import { useAppointmentStore } from '../../stores/appointmentStore';
 import { useProfessionalStore } from '../../stores/professionalStore';
+import { useAuthStore } from '../../stores/authStore';
+import { useUIStore } from '../../stores/uiStore';
 import { formatCurrency } from '../../utils/format';
 import { AppointmentStatus, Appointment } from '../../types';
-import { Plus, User, Scissors, Clock } from 'lucide-react';
+import { Plus, User, Scissors, Clock, MessageCircle } from 'lucide-react';
+import { openWhatsAppForAppointment } from '../../services/whatsapp';
 
 export function CalendarioSemanal({
   startDate,
@@ -20,6 +23,8 @@ export function CalendarioSemanal({
   } = useAppointmentStore();
 
   const { professionals } = useProfessionalStore();
+  const { tenant } = useAuthStore();
+  const { addToast } = useUIStore();
 
   // Generate 7 days starting from startDate
   const daysCount = viewMode === 'week' ? 7 : 1;
@@ -160,7 +165,29 @@ export function CalendarioSemanal({
                             <span className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 truncate">
                               {apt.customer_name}
                             </span>
-                            <span className={`w-2 h-2 rounded-full shrink-0 ${colors.dot}`} />
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openWhatsAppForAppointment(
+                                    apt,
+                                    tenant?.name || 'Studio Prime',
+                                    apt.status === 'confirmed' ? 'confirmation' : 'reminder'
+                                  );
+                                  addToast({
+                                    type: 'success',
+                                    title: 'WhatsApp Aberto',
+                                    message: `Redirecionando com os dados do agendamento de ${apt.customer_name}...`,
+                                  });
+                                }}
+                                className="p-0.5 rounded text-emerald-600 hover:text-white hover:bg-emerald-600 dark:text-emerald-400 dark:hover:bg-emerald-600 transition-colors"
+                                title="Enviar agendamento via WhatsApp"
+                              >
+                                <MessageCircle size={12} />
+                              </button>
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${colors.dot}`} />
+                            </div>
                           </div>
                           <p className="text-[10px] text-zinc-600 dark:text-zinc-300 truncate mt-0.5 font-medium">
                             {apt.service_name}

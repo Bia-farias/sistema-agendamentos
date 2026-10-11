@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Appointment, AppointmentStatus, DashboardKPIs } from '../types';
 import { initialAppointments, getTodayDateString } from '../services/mockData';
+import { appointmentApiService } from '../services/api/appointmentService';
+import { isSupabaseConfigured } from '../services/supabase';
 
 interface AppointmentState {
   appointments: Appointment[];
@@ -61,6 +63,13 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => {
       const updated = [newApt, ...get().appointments];
       localStorage.setItem('agenda_ai_appointments', JSON.stringify(updated));
       set({ appointments: updated, activeDrawer: { type: null } });
+
+      if (isSupabaseConfigured()) {
+        appointmentApiService.create(data).catch((err: unknown) => {
+          console.warn('Sync agendamento Supabase (aviso de rede):', err);
+        });
+      }
+
       return newApt;
     },
 
@@ -70,6 +79,12 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => {
       );
       localStorage.setItem('agenda_ai_appointments', JSON.stringify(updated));
       set({ appointments: updated });
+
+      if (isSupabaseConfigured()) {
+        appointmentApiService.update(id, data).catch((err: unknown) => {
+          console.warn('Sync atualização agendamento Supabase:', err);
+        });
+      }
     },
 
     updateStatus: (id: string, status: AppointmentStatus) => {
@@ -78,12 +93,24 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => {
       );
       localStorage.setItem('agenda_ai_appointments', JSON.stringify(updated));
       set({ appointments: updated });
+
+      if (isSupabaseConfigured()) {
+        appointmentApiService.updateStatus(id, status).catch((err: unknown) => {
+          console.warn('Sync status agendamento Supabase:', err);
+        });
+      }
     },
 
     deleteAppointment: (id: string) => {
       const updated = get().appointments.filter((apt) => apt.id !== id);
       localStorage.setItem('agenda_ai_appointments', JSON.stringify(updated));
       set({ appointments: updated, activeDrawer: { type: null } });
+
+      if (isSupabaseConfigured()) {
+        appointmentApiService.delete(id).catch((err: unknown) => {
+          console.warn('Sync exclusão agendamento Supabase:', err);
+        });
+      }
     },
 
     getTodayAppointments: () => {

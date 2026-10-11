@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Service } from '../types';
 import { initialServices } from '../services/mockData';
+import { serviceApiService } from '../services/api/serviceService';
+import { isSupabaseConfigured } from '../services/supabase';
 
 interface ServiceState {
   services: Service[];
@@ -44,6 +46,13 @@ export const useServiceStore = create<ServiceState>((set, get) => {
       const updated = [newService, ...get().services];
       localStorage.setItem('agenda_ai_services', JSON.stringify(updated));
       set({ services: updated, activeDrawer: { type: null } });
+
+      if (isSupabaseConfigured()) {
+        serviceApiService.create(data).catch((err) => {
+          console.warn('Sync serviço Supabase:', err);
+        });
+      }
+
       return newService;
     },
 
@@ -51,20 +60,39 @@ export const useServiceStore = create<ServiceState>((set, get) => {
       const updated = get().services.map((s) => (s.id === id ? { ...s, ...data } : s));
       localStorage.setItem('agenda_ai_services', JSON.stringify(updated));
       set({ services: updated, activeDrawer: { type: null } });
+
+      if (isSupabaseConfigured()) {
+        serviceApiService.update(id, data).catch((err: unknown) => {
+          console.warn('Sync atualização serviço Supabase:', err);
+        });
+      }
     },
 
     toggleServiceActive: (id) => {
+      const target = get().services.find((s) => s.id === id);
       const updated = get().services.map((s) =>
         s.id === id ? { ...s, is_active: !s.is_active } : s
       );
       localStorage.setItem('agenda_ai_services', JSON.stringify(updated));
       set({ services: updated });
+
+      if (isSupabaseConfigured() && target) {
+        serviceApiService.update(id, { is_active: !target.is_active }).catch((err: unknown) => {
+          console.warn('Sync toggle serviço Supabase:', err);
+        });
+      }
     },
 
     deleteService: (id) => {
       const updated = get().services.filter((s) => s.id !== id);
       localStorage.setItem('agenda_ai_services', JSON.stringify(updated));
       set({ services: updated, activeDrawer: { type: null } });
+
+      if (isSupabaseConfigured()) {
+        serviceApiService.delete(id).catch((err: unknown) => {
+          console.warn('Sync exclusão serviço Supabase:', err);
+        });
+      }
     },
   };
 });

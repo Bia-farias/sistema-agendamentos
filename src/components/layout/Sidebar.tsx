@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Settings,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -24,27 +25,24 @@ export function Sidebar() {
   const { tenant, profile, logout } = useAuthStore();
   const { openChat } = useAIChatStore();
 
-  const navItems = [
+  interface NavItem {
+    label: string;
+    path: string;
+    icon: any;
+    badge?: string;
+    highlight?: boolean;
+    onClick?: (e: React.MouseEvent) => void;
+  }
+
+  const navItems: NavItem[] = [
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Agenda', path: '/agenda', icon: Calendar },
     { label: 'Clientes', path: '/clientes', icon: Users },
     { label: 'Serviços', path: '/servicos', icon: Scissors },
     { label: 'Profissionais', path: '/profissionais', icon: UserCheck },
-    {
-      label: 'Financeiro',
-      path: '#financeiro',
-      icon: DollarSign,
-      badge: 'Em breve',
-      onClick: (e: React.MouseEvent) => {
-        e.preventDefault();
-        addToast({
-          type: 'info',
-          title: 'Módulo Financeiro',
-          message: 'Relatórios detalhados de caixa e DRE em desenvolvimento para o próximo update.',
-        });
-      },
-    },
+    { label: 'Financeiro', path: '/financeiro', icon: DollarSign },
     { label: 'WhatsApp', path: '/whatsapp', icon: MessageSquare },
+    { label: 'Configurações', path: '/configuracoes', icon: Settings },
     {
       label: 'Assistente IA',
       path: '#ia',

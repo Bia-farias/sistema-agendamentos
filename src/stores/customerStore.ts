@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Customer } from '../types';
 import { initialCustomers } from '../services/mockData';
+import { customerApiService } from '../services/api/customerService';
+import { isSupabaseConfigured } from '../services/supabase';
 
 interface CustomerState {
   customers: Customer[];
@@ -53,6 +55,13 @@ export const useCustomerStore = create<CustomerState>((set, get) => {
       const updated = [newCustomer, ...get().customers];
       localStorage.setItem('agenda_ai_customers', JSON.stringify(updated));
       set({ customers: updated, activeDrawer: { type: null } });
+
+      if (isSupabaseConfigured()) {
+        customerApiService.create(data).catch((err: unknown) => {
+          console.warn('Sync cliente Supabase:', err);
+        });
+      }
+
       return newCustomer;
     },
 
@@ -60,12 +69,24 @@ export const useCustomerStore = create<CustomerState>((set, get) => {
       const updated = get().customers.map((c) => (c.id === id ? { ...c, ...data } : c));
       localStorage.setItem('agenda_ai_customers', JSON.stringify(updated));
       set({ customers: updated });
+
+      if (isSupabaseConfigured()) {
+        customerApiService.update(id, data).catch((err: unknown) => {
+          console.warn('Sync atualização cliente Supabase:', err);
+        });
+      }
     },
 
     deleteCustomer: (id) => {
       const updated = get().customers.filter((c) => c.id !== id);
       localStorage.setItem('agenda_ai_customers', JSON.stringify(updated));
       set({ customers: updated, activeDrawer: { type: null } });
+
+      if (isSupabaseConfigured()) {
+        customerApiService.delete(id).catch((err: unknown) => {
+          console.warn('Sync exclusão cliente Supabase:', err);
+        });
+      }
     },
 
     getFilteredCustomers: () => {

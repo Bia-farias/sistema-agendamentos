@@ -3,19 +3,25 @@ import { useAppointmentStore } from '../../stores/appointmentStore';
 import { useCustomerStore } from '../../stores/customerStore';
 import { useServiceStore } from '../../stores/serviceStore';
 import { useProfessionalStore } from '../../stores/professionalStore';
+import { useAuthStore } from '../../stores/authStore';
+import { useFinancialStore } from '../../stores/financialStore';
 import { useUIStore } from '../../stores/uiStore';
 import { Drawer } from '../ui/Drawer';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
-import { Calendar, Clock, User, Scissors, DollarSign, Plus, Check } from 'lucide-react';
+import { Calendar, Clock, User, Scissors, DollarSign, Plus, Check, MessageCircle, ShieldCheck } from 'lucide-react';
 import { formatCurrency } from '../../utils/format';
+import { openWhatsAppForAppointment } from '../../services/whatsapp';
+import { getTodayDateString } from '../../services/mockData';
 
 export function NovoAgendamentoDrawer() {
-  const { activeDrawer, closeDrawer, addAppointment } = useAppointmentStore();
+  const { appointments, activeDrawer, closeDrawer, addAppointment } = useAppointmentStore();
   const { customers, addCustomer } = useCustomerStore();
   const { services } = useServiceStore();
   const { professionals } = useProfessionalStore();
+  const { depositConfig, addReceivable } = useFinancialStore();
+  const { tenant } = useAuthStore();
   const { addToast } = useUIStore();
 
   const isOpen = activeDrawer.type === 'new';
@@ -33,6 +39,7 @@ export function NovoAgendamentoDrawer() {
   const [startTime, setStartTime] = useState('09:00');
   const [notes, setNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card' | 'debit_card' | 'cash' | 'unpaid'>('unpaid');
+  const [sendWhatsAppOnCreate, setSendWhatsAppOnCreate] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync prefilled data
@@ -95,7 +102,7 @@ export function NovoAgendamentoDrawer() {
       const created = addCustomer({
         name: newCustomerName.trim(),
         phone: newCustomerPhone.trim(),
-        tenant_id: 'tenant-1001',
+        tenant_id: tenant?.id || 'tenant-default',
       });
       finalCustomerId = created.id;
       finalCustomerName = created.name;
@@ -123,11 +130,69 @@ export function NovoAgendamentoDrawer() {
       return;
     }
 
+    const currentTenantId = tenant?.id || 'tenant-default';
+
+    // 1. Validação de data passada
+    const todayStr = getTodayDateString();
+    if (date < todayStr) {
+      addToast({
+        type: 'error',
+        title: 'Data Retroativa',
+        message: 'Não é permitido criar agendamentos em datas anteriores a hoje.',
+      });
+      return;
+    }
+
+    // 2. Validação de horário de funcionamento
+    const openingTime = tenant?.settings?.opening_time || '08:00';
+    const closingTime = tenant?.settings?.closing_time || '20:00';
+    if (startTime < openingTime || endTime > closingTime) {
+      addToast({
+        type: 'error',
+        title: 'Fora do Expediente',
+        message: `O horário ${startTime} às ${endTime} ultrapassa o expediente do estabelecimento (${openingTime} às ${closingTime}).`,
+      });
+      return;
+    }
+
+    // 3. Validação de dias de atendimento do profissional
+    const [y, m, dNum] = date.split('-').map(Number);
+    const dayOfWeek = new Date(y, m - 1, dNum).getDay();
+    const dayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    if (selectedProfessional.working_hours?.days_of_week && selectedProfessional.working_hours.days_of_week.length > 0) {
+      if (!selectedProfessional.working_hours.days_of_week.includes(dayOfWeek)) {
+        addToast({
+          type: 'error',
+          title: 'Profissional Indisponível',
+          message: `${selectedProfessional.name} não realiza atendimentos aos ${dayNames[dayOfWeek]}s.`,
+        });
+        return;
+      }
+    }
+
+    // 4. Validação de conflito de horários (Anti-Double Booking)
+    const conflictingAppointment = appointments.find((apt) => {
+      if (apt.status === 'cancelled') return false;
+      if (apt.date !== date) return false;
+      if (apt.professional_id !== selectedProfessional.id) return false;
+      // Overlap: (novoInicio < fimExistente && novoFim > inicioExistente)
+      return startTime < apt.end_time && endTime > apt.start_time;
+    });
+
+    if (conflictingAppointment) {
+      addToast({
+        type: 'error',
+        title: 'Conflito de Horário! ⚠️',
+        message: `${selectedProfessional.name} já possui o agendamento de "${conflictingAppointment.customer_name}" das ${conflictingAppointment.start_time} às ${conflictingAppointment.end_time}. Escolha outro horário ou profissional.`,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      addAppointment({
-        tenant_id: 'tenant-1001',
+      const createdApt = addAppointment({
+        tenant_id: currentTenantId,
         customer_id: finalCustomerId,
         customer_name: finalCustomerName,
         customer_phone: finalCustomerPhone,
@@ -146,10 +211,65 @@ export function NovoAgendamentoDrawer() {
         total_price: selectedService.price,
       });
 
+      // Integração com Contas a Receber no Módulo Financeiro
+      try {
+        const hasSignal = depositConfig.enabled;
+        const signalVal = hasSignal
+          ? depositConfig.type === 'percentage'
+            ? Math.round((selectedService.price * depositConfig.value) / 100)
+            : Math.min(selectedService.price, depositConfig.value)
+          : 0;
+
+        addReceivable({
+          appointment_id: createdApt.id,
+          customer_id: finalCustomerId,
+          customer_name: finalCustomerName,
+          customer_phone: finalCustomerPhone,
+          service_name: selectedService.name,
+          professional_name: selectedProfessional.name,
+          description: `Atendimento ${selectedService.name}`,
+          original_amount: selectedService.price,
+          discount: 0,
+          surcharge: 0,
+          final_amount: selectedService.price,
+          amount_paid:
+            paymentMethod !== 'unpaid'
+              ? selectedService.price
+              : hasSignal
+              ? signalVal
+              : 0,
+          payment_method: paymentMethod === 'unpaid' ? 'pix' : (paymentMethod as any),
+          due_date: date,
+          paid_at: paymentMethod !== 'unpaid' ? date : undefined,
+          status:
+            paymentMethod !== 'unpaid'
+              ? 'paid'
+              : hasSignal
+              ? 'partially_paid'
+              : 'pending',
+          has_signal: hasSignal,
+          signal_amount: hasSignal ? signalVal : undefined,
+          signal_paid: hasSignal,
+          notes: notes || undefined,
+        });
+      } catch (errRec) {
+        console.error('Erro ao integrar com financeiro:', errRec);
+      }
+
+      if (sendWhatsAppOnCreate && createdApt) {
+        openWhatsAppForAppointment(
+          createdApt,
+          tenant?.name || 'Studio Prime',
+          'confirmation'
+        );
+      }
+
       addToast({
         type: 'success',
         title: 'Agendamento Criado!',
-        message: `Horário marcado para ${finalCustomerName} às ${startTime}.`,
+        message: sendWhatsAppOnCreate
+          ? `Agendamento criado! Redirecionando para o WhatsApp de ${finalCustomerName}...`
+          : `Horário marcado para ${finalCustomerName} às ${startTime}.`,
       });
 
       closeDrawer();
@@ -327,6 +447,17 @@ export function NovoAgendamentoDrawer() {
             <div className="w-full px-3.5 py-2.5 rounded-xl bg-violet-50/60 dark:bg-violet-500/10 border border-violet-200/60 dark:border-violet-500/20 text-sm font-extrabold text-violet-700 dark:text-violet-300">
               {formatCurrency(selectedService?.price || 0)}
             </div>
+            {depositConfig.enabled && selectedService && (
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
+                <ShieldCheck size={12} />
+                Sinal de reserva:{' '}
+                {formatCurrency(
+                  depositConfig.type === 'percentage'
+                    ? (selectedService.price * depositConfig.value) / 100
+                    : Math.min(selectedService.price, depositConfig.value)
+                )}
+              </span>
+            )}
           </div>
         </div>
 
@@ -342,6 +473,27 @@ export function NovoAgendamentoDrawer() {
             placeholder="Ex: Cliente prefere atendimento pontual, alergia a produtos..."
             className="w-full rounded-xl bg-zinc-50/80 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 text-sm p-3 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400"
           />
+        </div>
+
+        {/* WhatsApp Notification Option */}
+        <div className="pt-1">
+          <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/25 border border-emerald-200/90 dark:border-emerald-800/50 cursor-pointer select-none transition-all hover:bg-emerald-100/60 dark:hover:bg-emerald-950/40">
+            <input
+              type="checkbox"
+              checked={sendWhatsAppOnCreate}
+              onChange={(e) => setSendWhatsAppOnCreate(e.target.checked)}
+              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-emerald-300 dark:border-emerald-700 accent-emerald-600 cursor-pointer"
+            />
+            <div className="space-y-0.5">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                <MessageCircle size={15} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                Redirecionar para WhatsApp ao confirmar
+              </span>
+              <p className="text-[11px] text-emerald-700/90 dark:text-emerald-400">
+                Abre o WhatsApp com a mensagem personalizada contendo data, horário, serviço e valores.
+              </p>
+            </div>
+          </label>
         </div>
       </form>
     </Drawer>

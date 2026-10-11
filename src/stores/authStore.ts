@@ -12,6 +12,7 @@ interface AuthState {
   quickLogin: (role: UserRole) => void;
   logout: () => void;
   setTenant: (tenant: Tenant) => void;
+  updateTenant: (data: Partial<Tenant>) => void;
   updateProfile: (data: Partial<Profile>) => void;
   isSuperAdmin: () => boolean;
   isAdmin: () => boolean;
@@ -121,6 +122,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setTenant: (tenant: Tenant) => {
     localStorage.setItem('agenda_ai_tenant', JSON.stringify(tenant));
     set({ tenant });
+  },
+
+  updateTenant: (data: Partial<Tenant>) => {
+    const current = get().tenant;
+    if (!current) return;
+    const updated: Tenant = {
+      ...current,
+      ...data,
+      settings: {
+        ...(current.settings || {
+          opening_time: '08:00',
+          closing_time: '20:00',
+          interval_minutes: 30,
+          allow_online_booking: true,
+        }),
+        ...(data.settings || {}),
+      },
+    };
+    localStorage.setItem('agenda_ai_tenant', JSON.stringify(updated));
+    set({ tenant: updated });
   },
 
   updateProfile: (data: Partial<Profile>) => {

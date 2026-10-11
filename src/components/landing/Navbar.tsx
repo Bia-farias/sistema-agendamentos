@@ -105,6 +105,14 @@ export const Navbar: React.FC = () => {
             </button>
 
             <Link
+              to="/agendar"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 dark:hover:bg-violet-900/50 rounded-xl border border-violet-200/80 dark:border-violet-800/50 transition-all hover:scale-105"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Agendar Online</span>
+            </Link>
+
+            <Link
               to={SITE_CONFIG.links.systemAccess}
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 active:bg-violet-800 dark:bg-violet-600 dark:hover:bg-violet-500 rounded-xl shadow-md shadow-violet-500/25 hover:shadow-lg hover:shadow-violet-500/30 transition-all duration-200 hover:-translate-y-0.5"
             >

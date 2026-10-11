@@ -13,37 +13,43 @@ export async function sendMessageToGroq(
   messages: ChatMessage[],
   systemPrompt: string
 ): Promise<string> {
-  if (!API_KEY) {
+  const isKeyConfigured = API_KEY && !API_KEY.includes('sua_chave') && API_KEY.length > 15;
+
+  if (!isKeyConfigured) {
     return getSimulatedResponse(messages);
   }
 
-  const allMessages: ChatMessage[] = [
-    { role: 'system', content: systemPrompt },
-    ...messages,
-  ];
+  try {
+    const allMessages: ChatMessage[] = [
+      { role: 'system', content: systemPrompt },
+      ...messages,
+    ];
 
-  const response = await fetch(GROQ_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages: allMessages,
-      temperature: 0.7,
-      max_tokens: 1024,
-    }),
-  });
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: allMessages,
+        temperature: 0.7,
+        max_tokens: 1024,
+      }),
+    });
 
-  if (!response.ok) {
-    const error = await response.text();
-    console.error('Groq API error:', error);
-    throw new Error('Falha ao comunicar com a IA. Tente novamente.');
+    if (!response.ok) {
+      console.warn('Groq API indisponível, alternando para resposta simulada local.');
+      return getSimulatedResponse(messages);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || 'Não foi possível gerar uma resposta.';
+  } catch (err) {
+    console.warn('Erro ao conectar com Groq API, usando resposta simulada:', err);
+    return getSimulatedResponse(messages);
   }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content || 'Não foi possível gerar uma resposta.';
 }
 
 // ─── Simulated AI responses (used when no API key is configured) ─────────────
