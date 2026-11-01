@@ -1,65 +1,100 @@
-import { supabase, isSupabaseConfigured } from '../supabase';
+import { apiClient, setAuthToken, ApiError } from './apiClient';
 import { Profile, Tenant, UserRole } from '../../types';
 
-export const authApiService = {
-  async signIn(email: string, password: string):Promise<{ user: any; profile: Profile | null; tenant: Tenant | null }> {
-    if (!isSupabaseConfigured()) {
-      throw new Error('Supabase não configurado no .env');
-    }
+interface BackendAuthResponse {
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    role: string;
+    phone?: string | null;
+    avatarUrl?: string | null;
+    tenantId: string;
+    createdAt: string | Date;
+  };
+  tenant: {
+    id: string;
+    name: string;
+    slug: string;
+    plan: string;
+    businessType: string;
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
+    logoUrl?: string | null;
+    settings?: {
+      opening_time: string;
+      closing_time: string;
+      interval_minutes: number;
+      allow_online_booking: boolean;
+    };
+    createdAt: string | Date;
+  };
+  token: string;
+}
 
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+function mapBackendAuthData(data: { user: BackendAuthResponse['user']; tenant: BackendAuthResponse['tenant'] }): {
+  profile: Profile;
+  tenant: Tenant;
+} {
+  const profile: Profile = {
+    id: data.user.id,
+    user_id: data.user.id,
+    tenant_id: data.user.tenantId,
+    full_name: data.user.fullName,
+    role: (data.user.role || 'OWNER').toLowerCase() as UserRole,
+    email: data.user.email,
+    phone: data.user.phone || undefined,
+    avatar_url: data.user.avatarUrl || undefined,
+    is_active: true,
+    created_at: typeof data.user.createdAt === 'string' ? data.user.createdAt : new Date(data.user.createdAt).toISOString(),
+  };
+
+  const tenant: Tenant = {
+    id: data.tenant.id,
+    name: data.tenant.name,
+    slug: data.tenant.slug,
+    plan: (data.tenant.plan || 'pro').toLowerCase() as any,
+    business_type: (data.tenant.businessType || 'beauty_salon').toLowerCase() as any,
+    phone: data.tenant.phone || undefined,
+    email: data.tenant.email || undefined,
+    logo_url: data.tenant.logoUrl || undefined,
+    address: data.tenant.address || undefined,
+    settings: data.tenant.settings || {
+      opening_time: '08:00',
+      closing_time: '20:00',
+      interval_minutes: 30,
+      allow_online_booking: true,
+    },
+    created_at: typeof data.tenant.createdAt === 'string' ? data.tenant.createdAt : new Date(data.tenant.createdAt).toISOString(),
+  };
+
+  return { profile, tenant };
+}
+
+export const authApiService = {
+  async signIn(email: string, password: string): Promise<{
+    user: { id: string; email: string };
+    profile: Profile;
+    tenant: Tenant;
+    token: string;
+  }> {
+    const res = await apiClient.post<BackendAuthResponse>('/auth/login', {
       email,
       password,
     });
 
-    if (authError) throw authError;
+    if (res.token) {
+      setAuthToken(res.token);
+    }
 
-    // Buscar perfil
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', authData.user.id)
-      .single();
-
-    if (profileError) throw profileError;
-
-    // Buscar tenant
-    const { data: tenantData, error: tenantError } = await supabase
-      .from('tenants')
-      .select('*')
-      .eq('id', profileData.tenant_id)
-      .single();
-
-    if (tenantError) throw tenantError;
-
-    const profile: Profile = {
-      id: profileData.id,
-      user_id: profileData.user_id,
-      tenant_id: profileData.tenant_id,
-      full_name: profileData.full_name,
-      role: profileData.role,
-      email: profileData.email,
-      phone: profileData.phone || undefined,
-      avatar_url: profileData.avatar_url || undefined,
-      is_active: profileData.is_active,
-      created_at: profileData.created_at,
+    const { profile, tenant } = mapBackendAuthData(res);
+    return {
+      user: { id: res.user.id, email: res.user.email },
+      profile,
+      tenant,
+      token: res.token,
     };
-
-    const tenant: Tenant = {
-      id: tenantData.id,
-      name: tenantData.name,
-      slug: tenantData.slug,
-      plan: tenantData.plan,
-      business_type: tenantData.business_type,
-      phone: tenantData.phone || undefined,
-      email: tenantData.email || undefined,
-      logo_url: tenantData.logo_url || undefined,
-      address: tenantData.address || undefined,
-      settings: tenantData.settings,
-      created_at: tenantData.created_at,
-    };
-
-    return { user: authData.user, profile, tenant };
   },
 
   async signUpWithTenant(params: {
@@ -69,108 +104,79 @@ export const authApiService = {
     businessName: string;
     businessType: any;
     businessPhone: string;
-  }): Promise<{ user: any; profile: Profile | null; tenant: Tenant | null }> {
-    if (!isSupabaseConfigured()) {
-      throw new Error('Supabase não configurado no .env');
-    }
-
-    // 1. Criar usuário no auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+  }): Promise<{
+    user: { id: string; email: string };
+    profile: Profile;
+    tenant: Tenant;
+    token: string;
+  }> {
+    const res = await apiClient.post<BackendAuthResponse>('/auth/register', {
+      fullName: params.fullName,
       email: params.email,
       password: params.password,
-      options: {
-        data: {
-          full_name: params.fullName,
-        },
-      },
+      businessName: params.businessName,
+      businessType: params.businessType,
+      businessPhone: params.businessPhone,
     });
 
-    if (authError) throw authError;
-    if (!authData.user) throw new Error('Falha ao criar usuário no Supabase Auth');
+    if (res.token) {
+      setAuthToken(res.token);
+    }
 
-    // 2. Criar Tenant
-    const slug = params.businessName
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    const { data: tenantData, error: tenantError } = await supabase
-      .from('tenants')
-      .insert({
-        name: params.businessName,
-        slug: `${slug}-${Date.now().toString().slice(-4)}`,
-        plan: 'pro',
-        business_type: params.businessType,
-        phone: params.businessPhone,
-        email: params.email,
-        settings: {
-          opening_time: '08:00',
-          closing_time: '20:00',
-          interval_minutes: 30,
-          allow_online_booking: true,
-        },
-      })
-      .select()
-      .single();
-
-    if (tenantError) throw tenantError;
-
-    // 3. Criar Profile
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        user_id: authData.user.id,
-        tenant_id: tenantData.id,
-        full_name: params.fullName,
-        role: 'owner' as UserRole,
-        email: params.email,
-        phone: params.businessPhone,
-        is_active: true,
-      })
-      .select()
-      .single();
-
-    if (profileError) throw profileError;
-
-    const profile: Profile = {
-      id: profileData.id,
-      user_id: profileData.user_id,
-      tenant_id: profileData.tenant_id,
-      full_name: profileData.full_name,
-      role: profileData.role,
-      email: profileData.email,
-      phone: profileData.phone || undefined,
-      avatar_url: profileData.avatar_url || undefined,
-      is_active: profileData.is_active,
-      created_at: profileData.created_at,
+    const { profile, tenant } = mapBackendAuthData(res);
+    return {
+      user: { id: res.user.id, email: res.user.email },
+      profile,
+      tenant,
+      token: res.token,
     };
+  },
 
-    const tenant: Tenant = {
-      id: tenantData.id,
-      name: tenantData.name,
-      slug: tenantData.slug,
-      plan: tenantData.plan,
-      business_type: tenantData.business_type,
-      phone: tenantData.phone || undefined,
-      email: tenantData.email || undefined,
-      logo_url: tenantData.logo_url || undefined,
-      address: tenantData.address || undefined,
-      settings: tenantData.settings,
-      created_at: tenantData.created_at,
+  async getMe(): Promise<{
+    user: { id: string; email: string };
+    profile: Profile;
+    tenant: Tenant;
+  }> {
+    const res = await apiClient.get<{
+      user: BackendAuthResponse['user'];
+      tenant: BackendAuthResponse['tenant'];
+    }>('/auth/me');
+
+    const { profile, tenant } = mapBackendAuthData(res);
+    return {
+      user: { id: res.user.id, email: res.user.email },
+      profile,
+      tenant,
     };
-
-    return { user: authData.user, profile, tenant };
   },
 
   async signOut(): Promise<void> {
-    if (!isSupabaseConfigured()) return;
-    await supabase.auth.signOut();
+    setAuthToken(null);
   },
 
-  async getSession() {
-    if (!isSupabaseConfigured()) return null;
-    const { data } = await supabase.auth.getSession();
-    return data.session;
+  async resetPassword(email: string): Promise<void> {
+    // Integração futura com serviço de envio de e-mail (Resend / SMTP)
+    console.log(`Solicitação de recuperação de senha para: ${email}`);
   },
 };
+
+export function translateAuthError(message: string): string {
+  if (!message) return 'Ocorreu um erro na autenticação.';
+  const lower = message.toLowerCase();
+  if (lower.includes('invalid') || lower.includes('incorreto') || lower.includes('incorretos') || lower.includes('401')) {
+    return 'E-mail ou senha incorretos.';
+  }
+  if (lower.includes('já está cadastrado') || lower.includes('already exists') || lower.includes('409')) {
+    return 'Este e-mail já está cadastrado em nossa plataforma.';
+  }
+  if (lower.includes('inativa') || lower.includes('inactive')) {
+    return 'Esta conta de usuário está inativa. Contate o suporte.';
+  }
+  if (lower.includes('senha deve ter no mínimo') || lower.includes('password')) {
+    return 'A senha deve possuir no mínimo 6 caracteres.';
+  }
+  if (lower.includes('não foi possível conectar') || lower.includes('failed to fetch')) {
+    return 'Não foi possível conectar ao servidor. Verifique se o backend está em execução.';
+  }
+  return message;
+}

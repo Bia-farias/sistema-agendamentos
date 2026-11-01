@@ -4,7 +4,7 @@ import { CreateClientInput, UpdateClientInput, QueryClientInput } from '../schem
 
 export const clientService = {
   async list(tenantId: string, query: QueryClientInput) {
-    const { search, isVip, page = 1, limit = 20 } = query;
+    const { search, isVip, page = 1, limit = 200 } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -121,10 +121,11 @@ export const clientService = {
     }
 
     if (existing._count.appointments > 0) {
-      throw new AppError(
-        'Não é possível excluir um cliente que possui agendamentos no histórico.',
-        400
-      );
+      await prisma.client.update({
+        where: { id },
+        data: { isActive: false },
+      });
+      return { message: 'Cliente desativado com sucesso (histórico de agendamentos preservado)' };
     }
 
     await prisma.client.delete({

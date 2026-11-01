@@ -5,9 +5,24 @@ const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
 export const createProfessionalSchema = z.object({
   body: z.object({
     name: z.string().min(2, 'Nome do profissional deve ter no mínimo 2 caracteres'),
-    email: z.string().email('E-mail inválido').optional().nullable(),
-    phone: z.string().min(8, 'Telefone inválido').optional().nullable(),
-    avatarUrl: z.string().url('URL da foto inválida').optional().nullable(),
+    email: z
+      .string()
+      .optional()
+      .nullable()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null))
+      .refine((val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), {
+        message: 'E-mail inválido',
+      }),
+    phone: z
+      .string()
+      .optional()
+      .nullable()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null)),
+    avatarUrl: z
+      .string()
+      .optional()
+      .nullable()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null)),
     role: z.string().min(2, 'Cargo/especialidade deve ter no mínimo 2 caracteres').default('Especialista'),
     specialties: z.array(z.string()).optional().default([]),
     commissionPercentage: z
@@ -37,9 +52,24 @@ export const updateProfessionalSchema = z.object({
   }),
   body: z.object({
     name: z.string().min(2, 'Nome do profissional deve ter no mínimo 2 caracteres').optional(),
-    email: z.string().email('E-mail inválido').optional().nullable(),
-    phone: z.string().min(8, 'Telefone inválido').optional().nullable(),
-    avatarUrl: z.string().url('URL da foto inválida').optional().nullable(),
+    email: z
+      .string()
+      .optional()
+      .nullable()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null))
+      .refine((val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), {
+        message: 'E-mail inválido',
+      }),
+    phone: z
+      .string()
+      .optional()
+      .nullable()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null)),
+    avatarUrl: z
+      .string()
+      .optional()
+      .nullable()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null)),
     role: z.string().min(2, 'Cargo/especialidade deve ter no mínimo 2 caracteres').optional(),
     specialties: z.array(z.string()).optional(),
     commissionPercentage: z

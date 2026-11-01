@@ -1,107 +1,80 @@
-import { supabase, isSupabaseConfigured } from '../supabase';
+import { apiClient } from './apiClient';
 import { Professional } from '../../types';
 
+function mapBackendProfessional(p: any): Professional {
+  return {
+    id: p.id,
+    tenant_id: p.tenantId,
+    user_id: p.userId || undefined,
+    name: p.name,
+    email: p.email || undefined,
+    phone: p.phone || undefined,
+    avatar_url: p.avatarUrl || undefined,
+    role: p.role || 'Especialista',
+    specialties: Array.isArray(p.specialties) ? p.specialties : [],
+    commission_percentage: Number(p.commissionPercentage || 0),
+    color: p.color || '#6366f1',
+    is_active: Boolean(p.isActive),
+    working_hours: {
+      start: p.workingHoursStart || '09:00',
+      end: p.workingHoursEnd || '19:00',
+      days_of_week: Array.isArray(p.workingDays) ? p.workingDays : [1, 2, 3, 4, 5, 6],
+    },
+  };
+}
+
 export const professionalApiService = {
-  async getAll(tenantId: string): Promise<Professional[]> {
-    if (!isSupabaseConfigured()) return [];
-
-    const { data, error } = await supabase
-      .from('professionals')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .order('name', { ascending: true });
-
-    if (error) {
-      console.error('Erro ao buscar profissionais no Supabase:', error);
-      throw error;
-    }
-
-    return (data || []).map((p) => ({
-      id: p.id,
-      tenant_id: p.tenant_id,
-      name: p.name,
-      email: p.email || undefined,
-      phone: p.phone || undefined,
-      avatar_url: p.avatar_url || undefined,
-      role: p.role,
-      specialties: p.specialties || [],
-      commission_percentage: Number(p.commission_percentage) || 0,
-      color: p.color || undefined,
-      is_active: p.is_active,
-      working_hours: p.working_hours,
-    }));
+  async getAll(isActive?: boolean): Promise<Professional[]> {
+    const query = isActive !== undefined ? `?isActive=${isActive}` : '';
+    const res = await apiClient.get<any[]>(`/professionals${query}`);
+    return (res || []).map(mapBackendProfessional);
   },
 
-  async create(professional: Omit<Professional, 'id'>): Promise<Professional | null> {
-    if (!isSupabaseConfigured()) return null;
-
-    const { data, error } = await supabase
-      .from('professionals')
-      .insert({
-        tenant_id: professional.tenant_id,
-        name: professional.name,
-        email: professional.email || null,
-        phone: professional.phone || null,
-        avatar_url: professional.avatar_url || null,
-        role: professional.role,
-        specialties: professional.specialties || [],
-        commission_percentage: professional.commission_percentage || 0,
-        color: professional.color || '#6366f1',
-        is_active: professional.is_active ?? true,
-        working_hours: professional.working_hours || {
-          start: '09:00',
-          end: '19:00',
-          days_of_week: [1, 2, 3, 4, 5, 6],
-        },
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Erro ao cadastrar profissional no Supabase:', error);
-      throw error;
-    }
-
-    return {
-      ...data,
-      email: data.email || undefined,
-      phone: data.phone || undefined,
-      avatar_url: data.avatar_url || undefined,
-      color: data.color || undefined,
-    } as unknown as Professional;
+  async getById(id: string): Promise<Professional> {
+    const res = await apiClient.get<any>(`/professionals/${id}`);
+    return mapBackendProfessional(res);
   },
 
-  async update(id: string, updates: Partial<Professional>): Promise<Professional | null> {
-    if (!isSupabaseConfigured()) return null;
+  async create(professional: Omit<Professional, 'id'>): Promise<Professional> {
+    const res = await apiClient.post<any>('/professionals', {
+      name: professional.name,
+      email: professional.email || null,
+      phone: professional.phone || null,
+      avatarUrl: professional.avatar_url || null,
+      role: professional.role || 'Especialista',
+      specialties: professional.specialties || [],
+      commissionPercentage: Number(professional.commission_percentage || 0),
+      color: professional.color || '#6366f1',
+      isActive: professional.is_active ?? true,
+      workingHoursStart: professional.working_hours?.start || '09:00',
+      workingHoursEnd: professional.working_hours?.end || '19:00',
+      workingDays: professional.working_hours?.days_of_week || [1, 2, 3, 4, 5, 6],
+    });
 
-    const { data, error } = await supabase
-      .from('professionals')
-      .update(updates as any)
-      .eq('id', id)
-      .select()
-      .single();
+    return mapBackendProfessional(res);
+  },
 
-    if (error) {
-      console.error('Erro ao atualizar profissional no Supabase:', error);
-      throw error;
-    }
+  async update(id: string, updates: Partial<Professional>): Promise<Professional> {
+    const payload: any = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.email !== undefined) payload.email = updates.email || null;
+    if (updates.phone !== undefined) payload.phone = updates.phone || null;
+    if (updates.avatar_url !== undefined) payload.avatarUrl = updates.avatar_url || null;
+    if (updates.role !== undefined) payload.role = updates.role;
+    if (updates.specialties !== undefined) payload.specialties = updates.specialties;
+    if (updates.commission_percentage !== undefined) payload.commissionPercentage = Number(updates.commission_percentage);
+    if (updates.color !== undefined) payload.color = updates.color;
+    if (updates.is_active !== undefined) payload.isActive = updates.is_active;
+    if (updates.working_hours?.start !== undefined) payload.workingHoursStart = updates.working_hours.start;
+    if (updates.working_hours?.end !== undefined) payload.workingHoursEnd = updates.working_hours.end;
+    if (updates.working_hours?.days_of_week !== undefined) payload.workingDays = updates.working_hours.days_of_week;
 
-    return data as unknown as Professional;
+    const res = await apiClient.put<any>(`/professionals/${id}`, payload);
+    return mapBackendProfessional(res);
   },
 
   async delete(id: string): Promise<boolean> {
-    if (!isSupabaseConfigured()) return false;
-
-    const { error } = await supabase
-      .from('professionals')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Erro ao excluir profissional no Supabase:', error);
-      throw error;
-    }
-
+    await apiClient.delete(`/professionals/${id}`);
     return true;
   },
 };

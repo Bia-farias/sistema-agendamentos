@@ -4,7 +4,14 @@ export const createClientSchema = z.object({
   body: z.object({
     name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
     phone: z.string().min(8, 'Telefone deve ter no mínimo 8 caracteres'),
-    email: z.string().email('E-mail em formato inválido').optional().nullable(),
+    email: z
+      .string()
+      .optional()
+      .nullable()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null))
+      .refine((val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), {
+        message: 'E-mail em formato inválido',
+      }),
     birthDate: z
       .string()
       .optional()
@@ -22,7 +29,14 @@ export const updateClientSchema = z.object({
   body: z.object({
     name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres').optional(),
     phone: z.string().min(8, 'Telefone deve ter no mínimo 8 caracteres').optional(),
-    email: z.string().email('E-mail em formato inválido').optional().nullable(),
+    email: z
+      .string()
+      .optional()
+      .nullable()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null))
+      .refine((val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), {
+        message: 'E-mail em formato inválido',
+      }),
     birthDate: z
       .string()
       .optional()

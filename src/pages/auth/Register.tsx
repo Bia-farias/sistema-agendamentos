@@ -7,9 +7,10 @@ import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { User, Mail, Lock, Building, Phone, ArrowRight, ArrowLeft, Sparkles, Check } from 'lucide-react';
 
+import { authApiService, translateAuthError } from '../../services/api/authService';
+
 export default function Register() {
   const navigate = useNavigate();
-  const { login, setTenant } = useAuthStore();
   const { addToast } = useUIStore();
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -32,10 +33,18 @@ export default function Register() {
       });
       return;
     }
+    if (password.length < 6) {
+      addToast({
+        type: 'error',
+        title: 'Senha muito curta',
+        message: 'A senha deve possuir pelo menos 6 caracteres.',
+      });
+      return;
+    }
     setStep(2);
   };
 
-  const handleFinish = (e: React.FormEvent) => {
+  const handleFinish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!businessName || !businessPhone) {
       addToast({
@@ -47,27 +56,39 @@ export default function Register() {
     }
 
     setIsLoading(true);
-    setTimeout(async () => {
-      await login(email, 'owner');
-      setTenant({
-        id: `tenant-${Date.now()}`,
-        name: businessName,
-        slug: businessName.toLowerCase().replace(/\s+/g, '-'),
-        plan: 'pro',
-        business_type: businessType as any,
-        phone: businessPhone,
-        email: email,
-        created_at: new Date().toISOString(),
+    try {
+      const { user, profile, tenant } = await authApiService.signUpWithTenant({
+        email,
+        password,
+        fullName,
+        businessName,
+        businessType,
+        businessPhone,
       });
 
-      setIsLoading(false);
+      useAuthStore.setState({
+        user: { id: user.id, email: user.email },
+        profile,
+        tenant,
+        loading: false,
+      });
+
       addToast({
         type: 'success',
-        title: 'Conta Criada!',
-        message: `Bem-vindo ao Agenda AI! O ${businessName} está pronto.`,
+        title: 'Conta Criada com Sucesso!',
+        message: `Bem-vindo ao Agenda AI! O estabelecimento ${businessName} foi cadastrado.`,
       });
       navigate('/dashboard');
-    }, 800);
+    } catch (err: any) {
+      console.error('Erro no cadastro:', err);
+      addToast({
+        type: 'error',
+        title: 'Erro ao Criar Conta',
+        message: translateAuthError(err?.message || 'Falha ao cadastrar estabelecimento.'),
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -5,26 +5,37 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
+import { authApiService, translateAuthError } from '../../services/api/authService';
+
 export default function ForgotPassword() {
   const { addToast } = useUIStore();
   const [email, setEmail] = useState('');
   const [isSent, setIsSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await authApiService.resetPassword(email);
       setIsSent(true);
       addToast({
         type: 'success',
         title: 'Instruções enviadas!',
         message: 'Verifique sua caixa de entrada para redefinir a senha.',
       });
-    }, 600);
+    } catch (err: any) {
+      console.error('Erro na recuperação de senha:', err);
+      addToast({
+        type: 'error',
+        title: 'Falha no Envio',
+        message: translateAuthError(err?.message || 'Não foi possível enviar o e-mail de recuperação.'),
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -1,6 +1,7 @@
 // ==============================================================================
 // AGENDA AI — SCHEMA PRISMA ORM (POSTGRESQL)
 // Mapeado de acordo com o Frontend (React 18 + TypeScript + Zustand)
+// Suporte a Multi-Tenant, ERP Financeiro, Agendamentos e Soft-Delete
 // ==============================================================================
 
 generator client {
@@ -56,6 +57,41 @@ enum PaymentMethod {
   UNPAID
 }
 
+enum ReceivableStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  PARTIALLY_PAID
+}
+
+enum PayableStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PayableCategory {
+  ALUGUEL
+  SALARIOS
+  COMISSOES
+  FORNECEDORES
+  MARKETING
+  INTERNET
+  ENERGIA
+  IMPOSTOS
+  MATERIAIS
+  FUNCIONARIOS
+  OUTROS
+}
+
+enum MovementType {
+  ENTRY
+  EXIT
+  ADJUSTMENT
+}
+
 // ------------------------------------------------------------------------------
 // MODELOS PRINCIPAIS
 // ------------------------------------------------------------------------------
@@ -77,12 +113,25 @@ model Tenant {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
-  // Relacionamentos
+  // Relacionamentos Operacionais
   users         User[]
   clients       Client[]
   professionals Professional[]
   services      Service[]
   appointments  Appointment[]
+
+  // Relacionamentos Financeiros ERP
+  receivables    Receivable[]
+  payables       Payable[]
+  suppliers      Supplier[]
+  merchandises   Merchandise[]
+  stockMovements StockMovement[]
+  depositConfig  DepositConfig?
+
+  // Relacionamentos WhatsApp e IA
+  whatsappConnection WhatsAppConnection?
+  whatsappLogs       WhatsAppMessageLog[]
+  aiConversations    AIConversation[]
 
   @@map("tenants")
 }
@@ -104,6 +153,9 @@ model User {
   // Vínculo opcional se o usuário for um profissional da equipe
   professional Professional?
 
+  // Conversas com IA
+  aiConversations AIConversation[]
+
   @@unique([tenantId, email])
   @@index([tenantId])
   @@map("users")
@@ -119,13 +171,16 @@ model Client {
   birthDate DateTime?
   notes     String?
   isVip     Boolean   @default(false)
+  isActive  Boolean   @default(true)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   appointments Appointment[]
+  receivables  Receivable[]
 
   @@index([tenantId, name])
   @@index([tenantId, phone])
+  @@index([tenantId, isActive])
   @@map("clients")
 }
 
@@ -151,6 +206,7 @@ model Professional {
   updatedAt            DateTime @updatedAt
 
   appointments Appointment[]
+  payables     Payable[]
 
   @@index([tenantId, isActive])
   @@map("professionals")
@@ -197,8 +253,218 @@ model Appointment {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
+  receivables Receivable[]
+
   @@index([tenantId, date, startTime])
   @@index([professionalId, date])
   @@index([clientId])
   @@map("appointments")
+}
+
+// ------------------------------------------------------------------------------
+// MODELOS FINANCEIROS (ERP)
+// ------------------------------------------------------------------------------
+
+model Receivable {
+  id               String           @id @default(uuid())
+  tenantId         String
+  tenant           Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointmentId    String?
+  appointment      Appointment?     @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  clientId         String?
+  client           Client?          @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  customerName     String
+  customerPhone    String?
+  serviceName      String?
+  professionalName String?
+  description      String
+  originalAmount   Decimal          @db.Decimal(10, 2)
+  discount         Decimal          @default(0.00) @db.Decimal(10, 2)
+  surcharge        Decimal          @default(0.00) @db.Decimal(10, 2)
+  finalAmount      Decimal          @db.Decimal(10, 2)
+  amountPaid       Decimal          @default(0.00) @db.Decimal(10, 2)
+  paymentMethod    PaymentMethod    @default(PIX)
+  dueDate          String           // YYYY-MM-DD
+  paidAt           String?          // YYYY-MM-DD
+  status           ReceivableStatus @default(PENDING)
+  hasSignal        Boolean          @default(false)
+  signalAmount     Decimal?         @db.Decimal(10, 2)
+  signalPaid       Boolean          @default(false)
+  notes            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([tenantId, status])
+  @@index([tenantId, dueDate])
+  @@map("financial_receivables")
+}
+
+model Payable {
+  id               String          @id @default(uuid())
+  tenantId         String
+  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  description      String
+  category         PayableCategory @default(OUTROS)
+  supplierId       String?
+  supplier         Supplier?       @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  supplierName     String?
+  dueDate          String          // YYYY-MM-DD
+  amount           Decimal         @db.Decimal(10, 2)
+  paidAmount       Decimal         @default(0.00) @db.Decimal(10, 2)
+  status           PayableStatus   @default(PENDING)
+  paymentMethod    PaymentMethod?
+  paidAt           String?
+  professionalId   String?
+  professional     Professional?   @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  professionalName String?
+  isRecurring      Boolean         @default(false)
+  recurrenceType   String?
+  notes            String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([tenantId, status])
+  @@index([tenantId, dueDate])
+  @@map("financial_payables")
+}
+
+model Supplier {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  tradeName   String?
+  document    String   // CNPJ / CPF
+  phone       String
+  email       String?
+  address     String?
+  carrierName String?
+  category    String   @default("Geral")
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payables     Payable[]
+  merchandises Merchandise[]
+
+  @@index([tenantId, isActive])
+  @@map("financial_suppliers")
+}
+
+model Merchandise {
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  supplierId      String?
+  supplier        Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  supplierName    String?
+  carrierName     String?
+  quantity        Int      @default(0)
+  minQuantity     Int      @default(5)
+  unit            String   @default("un")
+  costPrice       Decimal  @db.Decimal(10, 2)
+  salePrice       Decimal? @db.Decimal(10, 2)
+  totalCost       Decimal  @db.Decimal(10, 2)
+  lastRestockDate String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  movements StockMovement[]
+
+  @@index([tenantId, isActive])
+  @@map("financial_merchandise")
+}
+
+model StockMovement {
+  id            String       @id @default(uuid())
+  tenantId      String
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  merchandiseId String
+  merchandise   Merchandise  @relation(fields: [merchandiseId], references: [id], onDelete: Cascade)
+  type          MovementType
+  quantityDelta Int
+  previousQty   Int
+  newQty        Int
+  reason        String?
+  createdAt     DateTime     @default(now())
+
+  @@index([tenantId, merchandiseId])
+  @@map("financial_stock_movements")
+}
+
+model DepositConfig {
+  id        String   @id @default(uuid())
+  tenantId  String   @unique
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enabled   Boolean  @default(false)
+  type      String   @default("percentage") // "percentage" | "fixed"
+  value     Decimal  @default(30.00) @db.Decimal(10, 2)
+  updatedAt DateTime @updatedAt
+
+  @@map("financial_deposit_configs")
+}
+
+// ------------------------------------------------------------------------------
+// MODELOS WHATSAPP E INTELIGÊNCIA ARTIFICIAL
+// ------------------------------------------------------------------------------
+
+model WhatsAppConnection {
+  id                 String   @id @default(uuid())
+  tenantId           String   @unique
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  status             String   @default("disconnected") // connected, disconnected, connecting
+  phoneNumber        String?
+  instanceName       String?  @default("WhatsApp Business")
+  batteryLevel       Int?     @default(100)
+  lastSyncAt         String?
+  totalSentThisMonth Int      @default(0)
+  confirmationRate   Decimal  @default(0.00) @db.Decimal(5, 2)
+  updatedAt          DateTime @updatedAt
+
+  @@map("whatsapp_connections")
+}
+
+model WhatsAppMessageLog {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerName  String
+  customerPhone String
+  appointmentId String?
+  templateName  String?
+  message       String
+  status        String   @default("delivered") // pending, sent, delivered, read, failed
+  sentAt        DateTime @default(now())
+
+  @@index([tenantId, customerPhone])
+  @@map("whatsapp_message_logs")
+}
+
+model AIConversation {
+  id        String      @id @default(uuid())
+  tenantId  String
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String      @default("Nova Conversa")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  messages  AIMessage[]
+
+  @@index([tenantId, userId])
+  @@map("ai_conversations")
+}
+
+model AIMessage {
+  id             String         @id @default(uuid())
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String         // user, assistant, system
+  content        String
+  createdAt      DateTime       @default(now())
+
+  @@map("ai_messages")
 }

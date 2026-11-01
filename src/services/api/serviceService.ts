@@ -1,97 +1,63 @@
-import { supabase, isSupabaseConfigured } from '../supabase';
+import { apiClient } from './apiClient';
 import { Service } from '../../types';
 
+function mapBackendService(s: any): Service {
+  return {
+    id: s.id,
+    tenant_id: s.tenantId,
+    name: s.name,
+    description: s.description || undefined,
+    category: s.category || 'Geral',
+    price: Number(s.price),
+    duration_minutes: s.durationMinutes,
+    is_active: Boolean(s.isActive),
+    color: s.color || undefined,
+    created_at: typeof s.createdAt === 'string' ? s.createdAt : new Date(s.createdAt || Date.now()).toISOString(),
+  };
+}
+
 export const serviceApiService = {
-  async getAll(tenantId: string): Promise<Service[]> {
-    if (!isSupabaseConfigured()) return [];
-
-    const { data, error } = await supabase
-      .from('services')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .order('category', { ascending: true })
-      .order('name', { ascending: true });
-
-    if (error) {
-      console.error('Erro ao buscar serviços no Supabase:', error);
-      throw error;
-    }
-
-    return (data || []).map((s) => ({
-      id: s.id,
-      tenant_id: s.tenant_id,
-      name: s.name,
-      description: s.description || undefined,
-      category: s.category,
-      price: Number(s.price),
-      duration_minutes: s.duration_minutes,
-      is_active: s.is_active,
-      color: s.color || undefined,
-      created_at: s.created_at,
-    }));
+  async getAll(category?: string): Promise<Service[]> {
+    const query = category && category !== 'all' ? `?category=${encodeURIComponent(category)}` : '';
+    const res = await apiClient.get<any[]>(`/services${query}`);
+    return (res || []).map(mapBackendService);
   },
 
-  async create(service: Omit<Service, 'id' | 'created_at'>): Promise<Service | null> {
-    if (!isSupabaseConfigured()) return null;
-
-    const { data, error } = await supabase
-      .from('services')
-      .insert({
-        tenant_id: service.tenant_id,
-        name: service.name,
-        description: service.description || null,
-        category: service.category,
-        price: service.price,
-        duration_minutes: service.duration_minutes,
-        color: service.color || '#6366f1',
-        is_active: service.is_active ?? true,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Erro ao cadastrar serviço no Supabase:', error);
-      throw error;
-    }
-
-    return {
-      ...data,
-      description: data.description || undefined,
-      color: data.color || undefined,
-    } as unknown as Service;
+  async getById(id: string): Promise<Service> {
+    const res = await apiClient.get<any>(`/services/${id}`);
+    return mapBackendService(res);
   },
 
-  async update(id: string, updates: Partial<Service>): Promise<Service | null> {
-    if (!isSupabaseConfigured()) return null;
+  async create(service: Omit<Service, 'id' | 'created_at'>): Promise<Service> {
+    const res = await apiClient.post<any>('/services', {
+      name: service.name,
+      description: service.description || null,
+      category: service.category || 'Geral',
+      price: Number(service.price),
+      durationMinutes: service.duration_minutes || 30,
+      color: service.color || '#6366f1',
+      isActive: service.is_active ?? true,
+    });
 
-    const { data, error } = await supabase
-      .from('services')
-      .update(updates as any)
-      .eq('id', id)
-      .select()
-      .single();
+    return mapBackendService(res);
+  },
 
-    if (error) {
-      console.error('Erro ao atualizar serviço no Supabase:', error);
-      throw error;
-    }
+  async update(id: string, updates: Partial<Service>): Promise<Service> {
+    const payload: any = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.description !== undefined) payload.description = updates.description || null;
+    if (updates.category !== undefined) payload.category = updates.category;
+    if (updates.price !== undefined) payload.price = Number(updates.price);
+    if (updates.duration_minutes !== undefined) payload.durationMinutes = updates.duration_minutes;
+    if (updates.color !== undefined) payload.color = updates.color;
+    if (updates.is_active !== undefined) payload.isActive = updates.is_active;
 
-    return data as unknown as Service;
+    const res = await apiClient.put<any>(`/services/${id}`, payload);
+    return mapBackendService(res);
   },
 
   async delete(id: string): Promise<boolean> {
-    if (!isSupabaseConfigured()) return false;
-
-    const { error } = await supabase
-      .from('services')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Erro ao deletar serviço no Supabase:', error);
-      throw error;
-    }
-
+    await apiClient.delete(`/services/${id}`);
     return true;
   },
 };
