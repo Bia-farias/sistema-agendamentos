@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useProfessionalStore } from '../../stores/professionalStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
 import { Drawer } from '../ui/Drawer';
 import { Button } from '../ui/Button';
@@ -7,6 +8,7 @@ import { Input } from '../ui/Input';
 import { Check, User, Phone, Mail, Percent, Sparkles, Clock } from 'lucide-react';
 
 export function NovoProfissionalDrawer() {
+  const { tenant } = useAuthStore();
   const { professionals, activeDrawer, closeDrawer, addProfessional, updateProfessional } =
     useProfessionalStore();
   const { addToast } = useUIStore();
@@ -54,7 +56,7 @@ export function NovoProfissionalDrawer() {
     }
   }, [editingProf, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim() || !role.trim()) {
@@ -75,7 +77,7 @@ export function NovoProfissionalDrawer() {
         .filter(Boolean);
 
       if (isEdit && editingProf) {
-        updateProfessional(editingProf.id, {
+        await updateProfessional(editingProf.id, {
           name: name.trim(),
           role: role.trim(),
           phone: phone.trim() || undefined,
@@ -96,8 +98,8 @@ export function NovoProfissionalDrawer() {
           message: `Os dados de ${name} foram atualizados.`,
         });
       } else {
-        addProfessional({
-          tenant_id: 'tenant-1001',
+        await addProfessional({
+          tenant_id: tenant?.id || 'tenant-1001',
           name: name.trim(),
           role: role.trim(),
           phone: phone.trim() || undefined,

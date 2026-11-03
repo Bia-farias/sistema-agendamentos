@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAppointmentStore } from '../stores/appointmentStore';
 import { FiltrosAgenda } from '../components/agenda/FiltrosAgenda';
 import { CalendarioSemanal } from '../components/agenda/CalendarioSemanal';
 
 export default function Agenda() {
+  const { fetchAppointments } = useAppointmentStore();
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
 
   // Compute current week's Monday (or Sunday) as starting date
   const getStartOfWeek = (d: Date) => {

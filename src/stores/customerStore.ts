@@ -2,10 +2,10 @@ import { create } from 'zustand';
 import { Customer } from '../types';
 import { initialCustomers } from '../services/mockData';
 import { customerApiService } from '../services/api/customerService';
-import { isSupabaseConfigured } from '../services/supabase';
 
 interface CustomerState {
   customers: Customer[];
+  isLoading: boolean;
   searchQuery: string;
   filterTab: 'all' | 'active' | 'inactive' | 'vip';
   activeDrawer: {
@@ -13,6 +13,7 @@ interface CustomerState {
     customerId?: string;
   };
 
+  fetchCustomers: (search?: string) => Promise<void>;
   setSearchQuery: (query: string) => void;
   setFilterTab: (tab: 'all' | 'active' | 'inactive' | 'vip') => void;
   openNewCustomerDrawer: () => void;
@@ -20,9 +21,9 @@ interface CustomerState {
   openDetailDrawer: (customerId: string) => void;
   closeDrawer: () => void;
 
-  addCustomer: (data: Omit<Customer, 'id' | 'created_at' | 'total_spent' | 'appointments_count'>) => Customer;
-  updateCustomer: (id: string, data: Partial<Customer>) => void;
-  deleteCustomer: (id: string) => void;
+  addCustomer: (data: Omit<Customer, 'id' | 'created_at' | 'total_spent' | 'appointments_count'>) => Promise<Customer>;
+  updateCustomer: (id: string, data: Partial<Customer>) => Promise<void>;
+  deleteCustomer: (id: string) => Promise<void>;
   getFilteredCustomers: () => Customer[];
 }
 
@@ -32,9 +33,26 @@ export const useCustomerStore = create<CustomerState>((set, get) => {
 
   return {
     customers: initial,
+    isLoading: false,
     searchQuery: '',
     filterTab: 'all',
     activeDrawer: { type: null },
+
+    fetchCustomers: async (search?: string) => {
+      set({ isLoading: true });
+      try {
+        const data = await customerApiService.getAll(search);
+        if (data && data.length > 0) {
+          set({ customers: data, isLoading: false });
+          localStorage.setItem('agenda_ai_customers', JSON.stringify(data));
+        } else {
+          set({ isLoading: false });
+        }
+      } catch (err) {
+        console.warn('Falha ao buscar clientes da API:', err);
+        set({ isLoading: false });
+      }
+    },
 
     setSearchQuery: (searchQuery) => set({ searchQuery }),
     setFilterTab: (filterTab) => set({ filterTab }),
@@ -44,48 +62,53 @@ export const useCustomerStore = create<CustomerState>((set, get) => {
     openDetailDrawer: (customerId) => set({ activeDrawer: { type: 'detail', customerId } }),
     closeDrawer: () => set({ activeDrawer: { type: null } }),
 
-    addCustomer: (data) => {
-      const newCustomer: Customer = {
-        ...data,
-        id: `cust-${Date.now()}`,
-        total_spent: 0,
-        appointments_count: 0,
-        created_at: new Date().toISOString().split('T')[0],
-      };
-      const updated = [newCustomer, ...get().customers];
-      localStorage.setItem('agenda_ai_customers', JSON.stringify(updated));
-      set({ customers: updated, activeDrawer: { type: null } });
-
-      if (isSupabaseConfigured()) {
-        customerApiService.create(data).catch((err: unknown) => {
-          console.warn('Sync cliente Supabase:', err);
-        });
+    addCustomer: async (data) => {
+      try {
+        const created = await customerApiService.create(data);
+        const updated = [created, ...get().customers.filter((c) => c.id !== created.id)];
+        localStorage.setItem('agenda_ai_customers', JSON.stringify(updated));
+        set({ customers: updated, activeDrawer: { type: null } });
+        return created;
+      } catch (err) {
+        console.warn('Erro ao salvar cliente na API, salvando localmente:', err);
+        const fallbackCustomer: Customer = {
+          ...data,
+          id: crypto.randomUUID(),
+          total_spent: 0,
+          appointments_count: 0,
+          created_at: new Date().toISOString().split('T')[0],
+        };
+        const updated = [fallbackCustomer, ...get().customers];
+        localStorage.setItem('agenda_ai_customers', JSON.stringify(updated));
+        set({ customers: updated, activeDrawer: { type: null } });
+        return fallbackCustomer;
       }
-
-      return newCustomer;
     },
 
-    updateCustomer: (id, data) => {
+    updateCustomer: async (id, data) => {
       const updated = get().customers.map((c) => (c.id === id ? { ...c, ...data } : c));
       localStorage.setItem('agenda_ai_customers', JSON.stringify(updated));
       set({ customers: updated });
 
-      if (isSupabaseConfigured()) {
-        customerApiService.update(id, data).catch((err: unknown) => {
-          console.warn('Sync atualização cliente Supabase:', err);
-        });
+      try {
+        const saved = await customerApiService.update(id, data);
+        const refreshed = get().customers.map((c) => (c.id === id ? saved : c));
+        set({ customers: refreshed });
+        localStorage.setItem('agenda_ai_customers', JSON.stringify(refreshed));
+      } catch (err) {
+        console.warn('Sync atualização cliente API:', err);
       }
     },
 
-    deleteCustomer: (id) => {
+    deleteCustomer: async (id) => {
       const updated = get().customers.filter((c) => c.id !== id);
       localStorage.setItem('agenda_ai_customers', JSON.stringify(updated));
       set({ customers: updated, activeDrawer: { type: null } });
 
-      if (isSupabaseConfigured()) {
-        customerApiService.delete(id).catch((err: unknown) => {
-          console.warn('Sync exclusão cliente Supabase:', err);
-        });
+      try {
+        await customerApiService.delete(id);
+      } catch (err) {
+        console.warn('Sync exclusão cliente API:', err);
       }
     },
 
@@ -93,7 +116,6 @@ export const useCustomerStore = create<CustomerState>((set, get) => {
       const { customers, searchQuery, filterTab } = get();
 
       return customers.filter((c) => {
-        // Search by name, phone or email
         const matchesQuery =
           c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           c.phone.includes(searchQuery) ||
@@ -103,7 +125,6 @@ export const useCustomerStore = create<CustomerState>((set, get) => {
 
         if (filterTab === 'vip') return c.is_vip;
         if (filterTab === 'inactive') {
-          // If last visit was more than 45 days ago or undefined
           return c.appointments_count <= 2;
         }
         if (filterTab === 'active') {

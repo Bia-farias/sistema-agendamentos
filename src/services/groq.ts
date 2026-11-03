@@ -1,53 +1,18 @@
+import { aiApiService } from './api/aiService';
+
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
-
-// Set VITE_GROQ_API_KEY in your .env file to enable real AI responses
-const API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-
 export async function sendMessageToGroq(
   messages: ChatMessage[],
   systemPrompt: string
 ): Promise<string> {
-  const isKeyConfigured = API_KEY && !API_KEY.includes('sua_chave') && API_KEY.length > 15;
-
-  if (!isKeyConfigured) {
-    return getSimulatedResponse(messages);
-  }
-
   try {
-    const allMessages: ChatMessage[] = [
-      { role: 'system', content: systemPrompt },
-      ...messages,
-    ];
-
-    const response = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: allMessages,
-        temperature: 0.7,
-        max_tokens: 1024,
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn('Groq API indisponível, alternando para resposta simulada local.');
-      return getSimulatedResponse(messages);
-    }
-
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || 'Não foi possível gerar uma resposta.';
+    return await aiApiService.chat(messages, systemPrompt);
   } catch (err) {
-    console.warn('Erro ao conectar com Groq API, usando resposta simulada:', err);
+    console.warn('API backend de IA indisponível, usando fallback inteligente:', err);
     return getSimulatedResponse(messages);
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProfessionalStore } from '../stores/professionalStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -20,12 +20,17 @@ import { formatPhone } from '../utils/format';
 
 export default function Profissionais() {
   const {
+    fetchProfessionals,
     professionals,
     openNewProfessionalDrawer,
     openEditProfessionalDrawer,
     toggleProfessionalActive,
     deleteProfessional,
   } = useProfessionalStore();
+
+  useEffect(() => {
+    fetchProfessionals();
+  }, [fetchProfessionals]);
 
   return (
     <div className="space-y-6">

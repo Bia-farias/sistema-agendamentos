@@ -31,18 +31,19 @@ export function Sidebar() {
     icon: any;
     badge?: string;
     highlight?: boolean;
+    roles?: string[];
     onClick?: (e: React.MouseEvent) => void;
   }
 
   const navItems: NavItem[] = [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['super_admin', 'owner', 'admin', 'receptionist'] },
     { label: 'Agenda', path: '/agenda', icon: Calendar },
     { label: 'Clientes', path: '/clientes', icon: Users },
     { label: 'Serviços', path: '/servicos', icon: Scissors },
-    { label: 'Profissionais', path: '/profissionais', icon: UserCheck },
-    { label: 'Financeiro', path: '/financeiro', icon: DollarSign },
-    { label: 'WhatsApp', path: '/whatsapp', icon: MessageSquare },
-    { label: 'Configurações', path: '/configuracoes', icon: Settings },
+    { label: 'Profissionais', path: '/profissionais', icon: UserCheck, roles: ['super_admin', 'owner', 'admin'] },
+    { label: 'Financeiro', path: '/financeiro', icon: DollarSign, roles: ['super_admin', 'owner', 'admin'] },
+    { label: 'WhatsApp', path: '/whatsapp', icon: MessageSquare, roles: ['super_admin', 'owner', 'admin', 'receptionist'] },
+    { label: 'Configurações', path: '/configuracoes', icon: Settings, roles: ['super_admin', 'owner', 'admin'] },
     {
       label: 'Assistente IA',
       path: '#ia',
@@ -54,6 +55,12 @@ export function Sidebar() {
       },
     },
   ];
+
+  const userRole = (profile?.role || 'receptionist').toLowerCase();
+  const visibleNavItems = navItems.filter((item) => {
+    if (!item.roles || item.roles.length === 0) return true;
+    return item.roles.includes(userRole);
+  });
 
   return (
     <aside
@@ -95,7 +102,7 @@ export function Sidebar() {
 
       {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
 

@@ -10,6 +10,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(10, 'JWT_SECRET deve ter no mínimo 10 caracteres'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
+  GROQ_API_KEY: z.string().optional(),
 });
 
 const _env = envSchema.safeParse(process.env);

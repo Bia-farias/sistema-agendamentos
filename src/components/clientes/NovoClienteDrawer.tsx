@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCustomerStore } from '../../stores/customerStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
 import { Drawer } from '../ui/Drawer';
 import { Button } from '../ui/Button';
@@ -8,6 +9,7 @@ import { maskPhone } from '../../utils/masks';
 import { Check, User, Phone, Mail, Calendar, Sparkles } from 'lucide-react';
 
 export function NovoClienteDrawer() {
+  const { tenant } = useAuthStore();
   const { customers, activeDrawer, closeDrawer, addCustomer, updateCustomer } =
     useCustomerStore();
   const { addToast } = useUIStore();
@@ -46,7 +48,7 @@ export function NovoClienteDrawer() {
     }
   }, [editingCustomer, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim() || !phone.trim()) {
@@ -62,7 +64,7 @@ export function NovoClienteDrawer() {
 
     try {
       if (isEdit && editingCustomer) {
-        updateCustomer(editingCustomer.id, {
+        await updateCustomer(editingCustomer.id, {
           name: name.trim(),
           phone: phone.trim(),
           email: email.trim() || undefined,
@@ -77,8 +79,8 @@ export function NovoClienteDrawer() {
           message: `Os dados de ${name} foram salvos com sucesso.`,
         });
       } else {
-        addCustomer({
-          tenant_id: 'tenant-1001',
+        await addCustomer({
+          tenant_id: tenant?.id || 'tenant-1001',
           name: name.trim(),
           phone: phone.trim(),
           email: email.trim() || undefined,

@@ -5,6 +5,7 @@ import {
   WhatsAppMessageLog,
   WhatsAppConnectionInfo,
 } from '../types';
+import { whatsappApiService } from '../services/api/whatsappService';
 
 interface WhatsAppState {
   connection: WhatsAppConnectionInfo;
@@ -15,6 +16,8 @@ interface WhatsAppState {
   isConnecting: boolean;
 
   // Actions
+  fetchWhatsAppStatus: () => Promise<void>;
+  fetchLogs: () => Promise<void>;
   setQrModalOpen: (open: boolean) => void;
   toggleRule: (ruleId: string) => void;
   updateTemplate: (templateId: string, content: string, name?: string) => void;
@@ -164,6 +167,32 @@ export const useWhatsAppStore = create<WhatsAppState>((set, get) => ({
   logs: saved?.logs || initialLogs,
   isConnecting: false,
 
+  fetchWhatsAppStatus: async () => {
+    try {
+      const conn = await whatsappApiService.getConnection();
+      if (conn) {
+        set({ connection: conn });
+        const current = get();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, connection: conn }));
+      }
+    } catch (e) {
+      console.warn('Erro ao sincronizar status do WhatsApp da API:', e);
+    }
+  },
+
+  fetchLogs: async () => {
+    try {
+      const logs = await whatsappApiService.getLogs();
+      if (logs && logs.length > 0) {
+        set({ logs });
+        const current = get();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, logs }));
+      }
+    } catch (e) {
+      console.warn('Erro ao buscar logs de WhatsApp da API:', e);
+    }
+  },
+
   setQrModalOpen: (open) => set({ isQrModalOpen: open }),
 
   toggleRule: (ruleId) => {
@@ -214,13 +243,25 @@ export const useWhatsAppStore = create<WhatsAppState>((set, get) => ({
 
   connectWhatsApp: async () => {
     set({ isConnecting: true });
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const apiConn = await whatsappApiService.connect();
+      if (apiConn) {
+        set({ connection: apiConn, isConnecting: false, isQrModalOpen: false });
+        const current = get();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, connection: apiConn }));
+        return;
+      }
+    } catch (e) {
+      console.warn('Erro ao conectar via API:', e);
+    }
+
+    // Fallback local se API offline
     set((state) => {
       const newConn: WhatsAppConnectionInfo = {
         ...state.connection,
         status: 'connected',
         phoneNumber: '+55 (11) 98888-7777',
-        instanceName: 'Studio Prime - WhatsApp Business',
+        instanceName: 'WhatsApp Business',
         lastSyncAt: 'Agora há pouco',
         batteryLevel: 98,
       };
@@ -230,7 +271,13 @@ export const useWhatsAppStore = create<WhatsAppState>((set, get) => ({
     });
   },
 
-  disconnectWhatsApp: () => {
+  disconnectWhatsApp: async () => {
+    try {
+      await whatsappApiService.disconnect();
+    } catch (e) {
+      console.warn('Erro ao desconectar via API:', e);
+    }
+
     set((state) => {
       const newConn: WhatsAppConnectionInfo = {
         ...state.connection,
@@ -244,29 +291,41 @@ export const useWhatsAppStore = create<WhatsAppState>((set, get) => ({
     });
   },
 
-  sendMessage: (customerName, customerPhone, message, templateName = 'Mensagem Direta', appointmentId) => {
-    set((state) => {
-      const newLog: WhatsAppMessageLog = {
-        id: `log-${Date.now()}`,
-        customerName,
-        customerPhone,
-        appointmentId,
-        templateName,
-        message,
-        status: 'delivered',
-        sentAt: 'Agora mesmo',
-      };
+  sendMessage: async (customerName, customerPhone, message, templateName = 'Mensagem Direta', appointmentId) => {
+    const tempId = `log-${Date.now()}`;
+    const newLog: WhatsAppMessageLog = {
+      id: tempId,
+      customerName,
+      customerPhone,
+      appointmentId,
+      templateName,
+      message,
+      status: 'delivered',
+      sentAt: 'Agora mesmo',
+    };
 
+    set((state) => {
       const newLogs = [newLog, ...state.logs];
       const newConn = {
         ...state.connection,
         totalSentThisMonth: state.connection.totalSentThisMonth + 1,
       };
-
       const updated = { ...state, logs: newLogs, connection: newConn };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       return { logs: newLogs, connection: newConn };
     });
+
+    try {
+      await whatsappApiService.sendMessage({
+        customerName,
+        customerPhone,
+        message,
+        templateName,
+        appointmentId,
+      });
+    } catch (e) {
+      console.warn('Sync log WhatsApp na API:', e);
+    }
   },
 
   openWhatsAppWeb: (phone, message) => {

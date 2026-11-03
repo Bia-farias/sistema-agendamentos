@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MessageSquare,
   QrCode,
@@ -42,9 +42,16 @@ export default function WhatsAppPage() {
     disconnectWhatsApp,
     clearLogs,
     sendMessage,
+    fetchWhatsAppStatus,
+    fetchLogs,
   } = useWhatsAppStore();
 
   const { addToast } = useUIStore();
+
+  useEffect(() => {
+    fetchWhatsAppStatus();
+    fetchLogs();
+  }, [fetchWhatsAppStatus, fetchLogs]);
 
   const [activeTab, setActiveTab] = useState<
     'rules' | 'templates' | 'recovery' | 'logs' | 'connection'

@@ -17,19 +17,9 @@ import {
 import { getTodayDateString } from '../services/mockData';
 import { useProfessionalStore } from './professionalStore';
 import { financialApiService } from '../services/api/financialService';
-import { isSupabaseConfigured } from '../services/supabase';
-import { useAuthStore } from './authStore';
 
 const STORAGE_KEY = 'agenda_ai_financial_v2';
 
-// Clear legacy v1 mock cache if present safely
-try {
-  if (typeof localStorage !== 'undefined') {
-    localStorage.removeItem('agenda_ai_financial_v1');
-  }
-} catch (_) {}
-
-// Initial clean data without fictitious mock records
 const getInitialReceivables = (): Receivable[] => [];
 const getInitialPayables = (): Payable[] => [];
 const getInitialSuppliers = (): Supplier[] => [];
@@ -105,36 +95,38 @@ interface FinancialState {
   paymentSettings: PaymentSetting[];
   depositConfig: DepositConfig;
   activePeriod: FinancialPeriod;
+  isLoading: boolean;
 
   // Actions
+  fetchFinancialData: () => Promise<void>;
   setActivePeriod: (period: FinancialPeriod) => void;
 
   // Receivables (Contas a Receber)
-  addReceivable: (receivable: Omit<Receivable, 'id' | 'created_at'>) => Receivable;
-  updateReceivable: (id: string, data: Partial<Receivable>) => void;
-  markReceivablePaid: (id: string, method?: PaymentMethod) => void;
-  deleteReceivable: (id: string) => void;
+  addReceivable: (receivable: Omit<Receivable, 'id' | 'created_at'>) => Promise<Receivable>;
+  updateReceivable: (id: string, data: Partial<Receivable>) => Promise<void>;
+  markReceivablePaid: (id: string, method?: PaymentMethod) => Promise<void>;
+  deleteReceivable: (id: string) => Promise<void>;
 
   // Payables (Contas a Pagar)
-  addPayable: (payable: Omit<Payable, 'id' | 'created_at'>) => Payable;
-  updatePayable: (id: string, data: Partial<Payable>) => void;
-  markPayablePaid: (id: string, method?: PaymentMethod) => void;
-  deletePayable: (id: string) => void;
+  addPayable: (payable: Omit<Payable, 'id' | 'created_at'>) => Promise<Payable>;
+  updatePayable: (id: string, data: Partial<Payable>) => Promise<void>;
+  markPayablePaid: (id: string, method?: PaymentMethod) => Promise<void>;
+  deletePayable: (id: string) => Promise<void>;
 
   // Suppliers (Fornecedores & Transportadoras)
-  addSupplier: (supplier: Omit<Supplier, 'id' | 'created_at'>) => Supplier;
-  updateSupplier: (id: string, data: Partial<Supplier>) => void;
-  deleteSupplier: (id: string) => void;
+  addSupplier: (supplier: Omit<Supplier, 'id' | 'created_at'>) => Promise<Supplier>;
+  updateSupplier: (id: string, data: Partial<Supplier>) => Promise<void>;
+  deleteSupplier: (id: string) => Promise<void>;
 
   // Merchandise (Controle de Mercadorias & Estoque)
-  addMerchandise: (merchandise: Omit<Merchandise, 'id' | 'created_at' | 'total_cost'>) => Merchandise;
-  updateMerchandise: (id: string, data: Partial<Merchandise>) => void;
-  adjustStock: (id: string, delta: number) => void;
-  deleteMerchandise: (id: string) => void;
+  addMerchandise: (merchandise: Omit<Merchandise, 'id' | 'created_at' | 'total_cost'>) => Promise<Merchandise>;
+  updateMerchandise: (id: string, data: Partial<Merchandise>) => Promise<void>;
+  adjustStock: (id: string, delta: number) => Promise<void>;
+  deleteMerchandise: (id: string) => Promise<void>;
 
   // Settings
   updatePaymentSetting: (id: string, data: Partial<PaymentSetting>) => void;
-  updateDepositConfig: (data: Partial<DepositConfig>) => void;
+  updateDepositConfig: (data: Partial<DepositConfig>) => Promise<void>;
 
   // Commissions
   payCommission: (professionalId: string, professionalName: string, amount: number) => void;
@@ -161,7 +153,6 @@ interface FinancialState {
 }
 
 export const useFinancialStore = create<FinancialState>((set, get) => {
-  // Load saved state or default
   let savedData: any = null;
   try {
     if (typeof localStorage !== 'undefined') {
@@ -206,6 +197,44 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
     paymentSettings: initialPaymentSettings,
     depositConfig: initialDepositConfig,
     activePeriod: 'month',
+    isLoading: false,
+
+    fetchFinancialData: async () => {
+      set({ isLoading: true });
+      try {
+        const [recRes, payRes, supRes, merchRes, depositRes] = await Promise.allSettled([
+          financialApiService.getReceivables(),
+          financialApiService.getPayables(),
+          financialApiService.getSuppliers(),
+          financialApiService.getMerchandise(),
+          financialApiService.getDepositConfig(),
+        ]);
+
+        const nextState: Partial<FinancialState> = { isLoading: false };
+
+        if (recRes.status === 'fulfilled' && recRes.value && recRes.value.length > 0) {
+          nextState.receivables = recRes.value;
+        }
+        if (payRes.status === 'fulfilled' && payRes.value && payRes.value.length > 0) {
+          nextState.payables = payRes.value;
+        }
+        if (supRes.status === 'fulfilled' && supRes.value && supRes.value.length > 0) {
+          nextState.suppliers = supRes.value;
+        }
+        if (merchRes.status === 'fulfilled' && merchRes.value && merchRes.value.length > 0) {
+          nextState.merchandise = merchRes.value;
+        }
+        if (depositRes.status === 'fulfilled' && depositRes.value) {
+          nextState.depositConfig = depositRes.value;
+        }
+
+        persist(nextState);
+        set(nextState);
+      } catch (err) {
+        console.warn('Falha ao sincronizar dados financeiros da API:', err);
+        set({ isLoading: false });
+      }
+    },
 
     setActivePeriod: (period) => set({ activePeriod: period }),
 
@@ -221,40 +250,41 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
     },
 
     // Receivables
-    addReceivable: (data) => {
+    addReceivable: async (data) => {
       const now = new Date().toISOString();
-      const newRec: Receivable = {
-        ...data,
-        id: `rec-${Date.now()}`,
-        created_at: now,
-      };
-      const updated = [newRec, ...get().receivables];
-      persist({ receivables: updated });
-      set({ receivables: updated });
-
-      if (isSupabaseConfigured()) {
-        const tenantId = useAuthStore.getState().tenant?.id || 'tenant-1';
-        financialApiService.createReceivable(data, tenantId).catch((err) => {
-          console.warn('Sync criação de recebível no Supabase:', err);
-        });
+      try {
+        const created = await financialApiService.createReceivable(data);
+        const updated = [created, ...get().receivables.filter((r) => r.id !== created.id)];
+        persist({ receivables: updated });
+        set({ receivables: updated });
+        return created;
+      } catch (err) {
+        console.warn('Erro ao salvar recebível na API, salvando localmente:', err);
+        const fallback: Receivable = {
+          ...data,
+          id: crypto.randomUUID(),
+          created_at: now,
+        };
+        const updated = [fallback, ...get().receivables];
+        persist({ receivables: updated });
+        set({ receivables: updated });
+        return fallback;
       }
-
-      return newRec;
     },
 
-    updateReceivable: (id, data) => {
+    updateReceivable: async (id, data) => {
       const updated = get().receivables.map((r) => (r.id === id ? { ...r, ...data } : r));
       persist({ receivables: updated });
       set({ receivables: updated });
 
-      if (isSupabaseConfigured()) {
-        financialApiService.updateReceivable(id, data).catch((err) => {
-          console.warn('Sync atualização de recebível no Supabase:', err);
-        });
+      try {
+        await financialApiService.updateReceivable(id, data);
+      } catch (err) {
+        console.warn('Sync atualização recebível API:', err);
       }
     },
 
-    markReceivablePaid: (id, method) => {
+    markReceivablePaid: async (id, method) => {
       const today = getTodayDateString();
       const rec = get().receivables.find((r) => r.id === id);
       const paymentMethod = method || rec?.payment_method || 'pix';
@@ -273,65 +303,61 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       persist({ receivables: updated });
       set({ receivables: updated });
 
-      if (isSupabaseConfigured() && rec) {
-        financialApiService.updateReceivable(id, {
-          status: 'paid',
-          amount_paid: rec.final_amount,
-          paid_at: today,
-          payment_method: paymentMethod,
-        }).catch((err) => {
-          console.warn('Sync baixa de recebível no Supabase:', err);
-        });
+      try {
+        await financialApiService.markReceivablePaid(id, paymentMethod, today);
+      } catch (err) {
+        console.warn('Sync baixa de recebível API:', err);
       }
     },
 
-    deleteReceivable: (id) => {
+    deleteReceivable: async (id) => {
       const updated = get().receivables.filter((r) => r.id !== id);
       persist({ receivables: updated });
       set({ receivables: updated });
 
-      if (isSupabaseConfigured()) {
-        financialApiService.deleteReceivable(id).catch((err) => {
-          console.warn('Sync exclusão de recebível no Supabase:', err);
-        });
+      try {
+        await financialApiService.deleteReceivable(id);
+      } catch (err) {
+        console.warn('Sync exclusão recebível API:', err);
       }
     },
 
     // Payables
-    addPayable: (data) => {
+    addPayable: async (data) => {
       const now = new Date().toISOString();
-      const newPay: Payable = {
-        ...data,
-        id: `pay-${Date.now()}`,
-        created_at: now,
-      };
-      const updated = [newPay, ...get().payables];
-      persist({ payables: updated });
-      set({ payables: updated });
-
-      if (isSupabaseConfigured()) {
-        const tenantId = useAuthStore.getState().tenant?.id || 'tenant-1';
-        financialApiService.createPayable(data, tenantId).catch((err) => {
-          console.warn('Sync criação de conta a pagar no Supabase:', err);
-        });
+      try {
+        const created = await financialApiService.createPayable(data);
+        const updated = [created, ...get().payables.filter((p) => p.id !== created.id)];
+        persist({ payables: updated });
+        set({ payables: updated });
+        return created;
+      } catch (err) {
+        console.warn('Erro ao salvar despesa na API, salvando localmente:', err);
+        const fallback: Payable = {
+          ...data,
+          id: crypto.randomUUID(),
+          created_at: now,
+        };
+        const updated = [fallback, ...get().payables];
+        persist({ payables: updated });
+        set({ payables: updated });
+        return fallback;
       }
-
-      return newPay;
     },
 
-    updatePayable: (id, data) => {
+    updatePayable: async (id, data) => {
       const updated = get().payables.map((p) => (p.id === id ? { ...p, ...data } : p));
       persist({ payables: updated });
       set({ payables: updated });
 
-      if (isSupabaseConfigured()) {
-        financialApiService.updatePayable(id, data).catch((err) => {
-          console.warn('Sync atualização de conta a pagar no Supabase:', err);
-        });
+      try {
+        await financialApiService.updatePayable(id, data);
+      } catch (err) {
+        console.warn('Sync atualização despesa API:', err);
       }
     },
 
-    markPayablePaid: (id, method) => {
+    markPayablePaid: async (id, method) => {
       const today = getTodayDateString();
       const pay = get().payables.find((p) => p.id === id);
       const paymentMethod = method || pay?.payment_method || 'pix';
@@ -350,73 +376,98 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       persist({ payables: updated });
       set({ payables: updated });
 
-      if (isSupabaseConfigured() && pay) {
-        financialApiService.updatePayable(id, {
-          status: 'paid',
-          paid_amount: pay.amount,
-          paid_at: today,
-          payment_method: paymentMethod,
-        }).catch((err) => {
-          console.warn('Sync baixa de conta a pagar no Supabase:', err);
-        });
+      try {
+        await financialApiService.markPayablePaid(id, pay?.amount, paymentMethod, today);
+      } catch (err) {
+        console.warn('Sync baixa de despesa API:', err);
       }
     },
 
-    deletePayable: (id) => {
+    deletePayable: async (id) => {
       const updated = get().payables.filter((p) => p.id !== id);
       persist({ payables: updated });
       set({ payables: updated });
 
-      if (isSupabaseConfigured()) {
-        financialApiService.deletePayable(id).catch((err) => {
-          console.warn('Sync exclusão de conta a pagar no Supabase:', err);
-        });
+      try {
+        await financialApiService.deletePayable(id);
+      } catch (err) {
+        console.warn('Sync exclusão despesa API:', err);
       }
     },
 
     // Suppliers
-    addSupplier: (data) => {
+    addSupplier: async (data) => {
       const now = new Date().toISOString();
-      const newSup: Supplier = {
-        ...data,
-        id: `sup-${Date.now()}`,
-        created_at: now,
-      };
-      const updated = [newSup, ...get().suppliers];
-      persist({ suppliers: updated });
-      set({ suppliers: updated });
-      return newSup;
+      try {
+        const created = await financialApiService.createSupplier(data);
+        const updated = [created, ...get().suppliers.filter((s) => s.id !== created.id)];
+        persist({ suppliers: updated });
+        set({ suppliers: updated });
+        return created;
+      } catch (err) {
+        console.warn('Erro ao salvar fornecedor na API, salvando localmente:', err);
+        const fallback: Supplier = {
+          ...data,
+          id: crypto.randomUUID(),
+          created_at: now,
+        };
+        const updated = [fallback, ...get().suppliers];
+        persist({ suppliers: updated });
+        set({ suppliers: updated });
+        return fallback;
+      }
     },
 
-    updateSupplier: (id, data) => {
+    updateSupplier: async (id, data) => {
       const updated = get().suppliers.map((s) => (s.id === id ? { ...s, ...data } : s));
       persist({ suppliers: updated });
       set({ suppliers: updated });
+
+      try {
+        await financialApiService.updateSupplier(id, data);
+      } catch (err) {
+        console.warn('Sync atualização fornecedor API:', err);
+      }
     },
 
-    deleteSupplier: (id) => {
+    deleteSupplier: async (id) => {
       const updated = get().suppliers.filter((s) => s.id !== id);
       persist({ suppliers: updated });
       set({ suppliers: updated });
+
+      try {
+        await financialApiService.deleteSupplier(id);
+      } catch (err) {
+        console.warn('Sync exclusão fornecedor API:', err);
+      }
     },
 
     // Merchandise
-    addMerchandise: (data) => {
+    addMerchandise: async (data) => {
       const now = new Date().toISOString();
-      const total_cost = data.quantity * data.cost_price;
-      const newMerch: Merchandise = {
-        ...data,
-        id: `merch-${Date.now()}`,
-        total_cost,
-        created_at: now,
-      };
-      const updated = [newMerch, ...get().merchandise];
-      persist({ merchandise: updated });
-      set({ merchandise: updated });
-      return newMerch;
+      try {
+        const created = await financialApiService.createMerchandise(data);
+        const updated = [created, ...get().merchandise.filter((m) => m.id !== created.id)];
+        persist({ merchandise: updated });
+        set({ merchandise: updated });
+        return created;
+      } catch (err) {
+        console.warn('Erro ao salvar produto na API, salvando localmente:', err);
+        const total_cost = data.quantity * data.cost_price;
+        const fallback: Merchandise = {
+          ...data,
+          id: crypto.randomUUID(),
+          total_cost,
+          created_at: now,
+        };
+        const updated = [fallback, ...get().merchandise];
+        persist({ merchandise: updated });
+        set({ merchandise: updated });
+        return fallback;
+      }
     },
 
-    updateMerchandise: (id, data) => {
+    updateMerchandise: async (id, data) => {
       const updated = get().merchandise.map((m) => {
         if (m.id === id) {
           const qty = data.quantity !== undefined ? data.quantity : m.quantity;
@@ -433,8 +484,9 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       set({ merchandise: updated });
     },
 
-    adjustStock: (id, delta) => {
+    adjustStock: async (id, delta) => {
       const today = getTodayDateString();
+      const target = get().merchandise.find((m) => m.id === id);
       const updated = get().merchandise.map((m) => {
         if (m.id === id) {
           const newQty = Math.max(0, m.quantity + delta);
@@ -449,12 +501,27 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       });
       persist({ merchandise: updated });
       set({ merchandise: updated });
+
+      if (target) {
+        try {
+          const type = delta > 0 ? 'entry' : 'exit';
+          await financialApiService.adjustStock(id, type, Math.abs(delta));
+        } catch (err) {
+          console.warn('Sync ajuste de estoque API:', err);
+        }
+      }
     },
 
-    deleteMerchandise: (id) => {
+    deleteMerchandise: async (id) => {
       const updated = get().merchandise.filter((m) => m.id !== id);
       persist({ merchandise: updated });
       set({ merchandise: updated });
+
+      try {
+        await financialApiService.deleteMerchandise(id);
+      } catch (err) {
+        console.warn('Sync exclusão produto API:', err);
+      }
     },
 
     // Settings
@@ -464,17 +531,23 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       set({ paymentSettings: updated });
     },
 
-    updateDepositConfig: (data) => {
+    updateDepositConfig: async (data) => {
       const updated = { ...get().depositConfig, ...data };
       persist({ depositConfig: updated });
       set({ depositConfig: updated });
+
+      try {
+        await financialApiService.updateDepositConfig(data);
+      } catch (err) {
+        console.warn('Sync configuração sinal API:', err);
+      }
     },
 
     // Commissions: Launches a paid commission entry in payables
     payCommission: (professionalId, professionalName, amount) => {
       const today = getTodayDateString();
       const newPayable: Payable = {
-        id: `pay-com-${Date.now()}`,
+        id: crypto.randomUUID(),
         description: `Comissão — ${professionalName}`,
         category: 'comissoes',
         due_date: today,
@@ -492,6 +565,22 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       const updatedPayables = [newPayable, ...get().payables];
       persist({ payables: updatedPayables });
       set({ payables: updatedPayables });
+
+      financialApiService.createPayable({
+        description: newPayable.description,
+        category: newPayable.category,
+        amount: newPayable.amount,
+        paid_amount: newPayable.paid_amount,
+        due_date: newPayable.due_date,
+        paid_at: newPayable.paid_at,
+        status: newPayable.status,
+        professional_id: professionalId,
+        professional_name: professionalName,
+        payment_method: newPayable.payment_method,
+        notes: newPayable.notes,
+      }).catch((err) => {
+        console.warn('Sync comissão em contas a pagar API:', err);
+      });
     },
 
     // Analytics: KPIs calculation based on period
@@ -501,7 +590,6 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       const receivables = get().receivables;
       const payables = get().payables;
 
-      // Filter by period
       const isDateInPeriod = (dateStr: string) => {
         if (!dateStr || period === 'all') return true;
         const target = new Date(dateStr);
@@ -511,7 +599,6 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
           return dateStr === today;
         }
         if (period === 'week') {
-          // within 7 days
           const diffDays = (curr.getTime() - target.getTime()) / (1000 * 3600 * 24);
           return diffDays >= -1 && diffDays <= 7;
         }
@@ -601,7 +688,6 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
 
       const entries: CashFlowEntry[] = [];
 
-      // Paid receivables -> Incomes
       receivables
         .filter((r) => r.status === 'paid' || (r.status === 'partially_paid' && r.amount_paid > 0))
         .forEach((r) => {
@@ -619,7 +705,6 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
           });
         });
 
-      // Paid payables -> Expenses
       payables
         .filter((p) => p.status === 'paid')
         .forEach((p) => {
@@ -637,10 +722,9 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
           });
         });
 
-      // Sort chronologically ascending to compute progressive balance
       entries.sort((a, b) => a.date.localeCompare(b.date));
 
-      let currentBalance = 0; // Saldo inicial real
+      let currentBalance = 0;
       entries.forEach((entry) => {
         if (entry.type === 'income') {
           currentBalance += entry.amount;
@@ -650,17 +734,14 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
         entry.balance_after = currentBalance;
       });
 
-      // Return descending for list presentation
       return entries.reverse();
     },
 
-    // Professional commission summary calculation
     getCommissionSummaries: () => {
       const receivables = get().receivables;
       const payables = get().payables;
       const registeredProfessionals = useProfessionalStore.getState().professionals;
 
-      // Group receivables by professional
       const profMap: Record<
         string,
         {
@@ -673,7 +754,6 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
         }
       > = {};
 
-      // Seed with actually registered professionals in the system
       registeredProfessionals.forEach((p) => {
         profMap[p.name] = {
           id: p.id,
@@ -685,7 +765,6 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
         };
       });
 
-      // Add or accumulate from paid receivables
       receivables
         .filter((r) => r.status === 'paid' && r.professional_name)
         .forEach((r) => {
@@ -704,7 +783,6 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
           profMap[pName].revenue += r.final_amount;
         });
 
-      // Calculate paid commissions in payables
       const paidByProf: Record<string, number> = {};
       payables
         .filter((p) => p.category === 'comissoes' && p.status === 'paid')

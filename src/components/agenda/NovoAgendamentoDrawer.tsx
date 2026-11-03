@@ -84,7 +84,7 @@ export function NovoAgendamentoDrawer() {
 
   const endTime = calculateEndTime(startTime, selectedService?.duration_minutes || 30);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     let finalCustomerId = customerId;
@@ -100,7 +100,7 @@ export function NovoAgendamentoDrawer() {
         });
         return;
       }
-      const created = addCustomer({
+      const created = await addCustomer({
         name: newCustomerName.trim(),
         phone: newCustomerPhone.trim(),
         tenant_id: tenant?.id || 'tenant-default',
@@ -192,7 +192,7 @@ export function NovoAgendamentoDrawer() {
     setIsSubmitting(true);
 
     try {
-      const createdApt = addAppointment({
+      const createdApt = await addAppointment({
         tenant_id: currentTenantId,
         customer_id: finalCustomerId,
         customer_name: finalCustomerName,

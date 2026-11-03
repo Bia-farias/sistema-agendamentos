@@ -1,184 +1,310 @@
-import { supabase, isSupabaseConfigured } from '../supabase';
-import { Receivable, Payable, Supplier, Merchandise, DepositConfig } from '../../types/financeiro';
+import { apiClient } from './apiClient';
+import {
+  Receivable,
+  Payable,
+  Supplier,
+  Merchandise,
+  DepositConfig,
+  PaymentMethod,
+  ReceivableStatus,
+  PayableStatus,
+  PayableCategory,
+} from '../../types/financeiro';
+
+function mapBackendReceivable(r: any): Receivable {
+  return {
+    id: r.id,
+    appointment_id: r.appointmentId || undefined,
+    customer_id: r.clientId || r.customerId || undefined,
+    customer_name: r.customerName,
+    customer_phone: r.customerPhone || undefined,
+    service_name: r.serviceName || undefined,
+    professional_name: r.professionalName || undefined,
+    description: r.description,
+    original_amount: Number(r.originalAmount),
+    discount: Number(r.discount || 0),
+    surcharge: Number(r.surcharge || 0),
+    final_amount: Number(r.finalAmount),
+    amount_paid: Number(r.amountPaid || 0),
+    payment_method: (r.paymentMethod ? r.paymentMethod.toLowerCase() : 'pix') as PaymentMethod,
+    due_date: r.dueDate,
+    paid_at: r.paidAt || undefined,
+    status: (r.status ? r.status.toLowerCase() : 'pending') as ReceivableStatus,
+    has_signal: Boolean(r.hasSignal),
+    signal_amount: r.signalAmount ? Number(r.signalAmount) : undefined,
+    signal_paid: Boolean(r.signalPaid),
+    notes: r.notes || undefined,
+    created_at: typeof r.createdAt === 'string' ? r.createdAt : new Date(r.createdAt || Date.now()).toISOString(),
+  };
+}
+
+function mapBackendPayable(p: any): Payable {
+  return {
+    id: p.id,
+    description: p.description,
+    category: (p.category ? p.category.toLowerCase() : 'outros') as PayableCategory,
+    amount: Number(p.amount),
+    paid_amount: Number(p.paidAmount || 0),
+    due_date: p.dueDate,
+    paid_at: p.paidAt || undefined,
+    status: (p.status ? p.status.toLowerCase() : 'pending') as PayableStatus,
+    supplier_id: p.supplierId || undefined,
+    supplier_name: p.supplierName || undefined,
+    professional_id: p.professionalId || undefined,
+    professional_name: p.professionalName || undefined,
+    payment_method: p.paymentMethod ? (p.paymentMethod.toLowerCase() as PaymentMethod) : undefined,
+    is_recurring: Boolean(p.isRecurring),
+    recurrence_type: p.recurrenceType || undefined,
+    notes: p.notes || undefined,
+    created_at: typeof p.createdAt === 'string' ? p.createdAt : new Date(p.createdAt || Date.now()).toISOString(),
+  };
+}
+
+function mapBackendSupplier(s: any): Supplier {
+  return {
+    id: s.id,
+    name: s.name,
+    trade_name: s.tradeName || undefined,
+    document: s.document,
+    phone: s.phone,
+    email: s.email || undefined,
+    address: s.address || undefined,
+    carrier_name: s.carrierName || undefined,
+    category: s.category || 'Geral',
+    notes: s.notes || undefined,
+    created_at: typeof s.createdAt === 'string' ? s.createdAt : new Date(s.createdAt || Date.now()).toISOString(),
+  };
+}
+
+function mapBackendMerchandise(m: any): Merchandise {
+  return {
+    id: m.id,
+    name: m.name,
+    supplier_id: m.supplierId || undefined,
+    supplier_name: m.supplierName || undefined,
+    carrier_name: m.carrierName || undefined,
+    quantity: m.quantity || 0,
+    min_quantity: m.minQuantity !== undefined ? m.minQuantity : 5,
+    unit: m.unit || 'un',
+    cost_price: Number(m.costPrice),
+    sale_price: m.salePrice ? Number(m.salePrice) : undefined,
+    total_cost: Number(m.totalCost),
+    last_restock_date: m.lastRestockDate || new Date().toISOString().split('T')[0],
+    created_at: typeof m.createdAt === 'string' ? m.createdAt : new Date(m.createdAt || Date.now()).toISOString(),
+  };
+}
 
 export const financialApiService = {
-  // Receivables (Contas a Receber)
-  async getReceivables(tenantId: string): Promise<Receivable[]> {
-    if (!isSupabaseConfigured()) return [];
-
-    const { data, error } = await supabase
-      .from('financial_receivables')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .order('due_date', { ascending: false });
-
-    if (error) {
-      console.warn('Erro ao carregar recebíveis do Supabase:', error);
-      return [];
-    }
-
-    return (data || []).map((r: any) => ({
-      id: r.id,
-      appointment_id: r.appointment_id || undefined,
-      customer_id: r.customer_id || undefined,
-      customer_name: r.customer_name,
-      customer_phone: r.customer_phone || undefined,
-      service_name: r.service_name || undefined,
-      professional_name: r.professional_name || undefined,
-      description: r.description,
-      original_amount: Number(r.original_amount),
-      discount: Number(r.discount || 0),
-      surcharge: Number(r.surcharge || 0),
-      final_amount: Number(r.final_amount),
-      amount_paid: Number(r.amount_paid || 0),
-      payment_method: r.payment_method || 'pix',
-      due_date: r.due_date,
-      paid_at: r.paid_at || undefined,
-      status: r.status,
-      has_signal: Boolean(r.has_signal),
-      notes: r.notes || undefined,
-      created_at: r.created_at,
-    }));
+  // Receivables
+  async getReceivables(): Promise<Receivable[]> {
+    const res = await apiClient.get<any[]>('/financial/receivables');
+    return (res || []).map(mapBackendReceivable);
   },
 
-  async createReceivable(receivable: Omit<Receivable, 'id' | 'created_at'>, tenantId: string): Promise<void> {
-    if (!isSupabaseConfigured()) return;
-
-    const { error } = await supabase.from('financial_receivables').insert({
-      tenant_id: tenantId,
-      appointment_id: receivable.appointment_id || null,
-      customer_id: receivable.customer_id || null,
-      customer_name: receivable.customer_name,
-      customer_phone: receivable.customer_phone || null,
-      service_name: receivable.service_name || null,
-      professional_name: receivable.professional_name || null,
+  async createReceivable(receivable: Omit<Receivable, 'id' | 'created_at'>): Promise<Receivable> {
+    const res = await apiClient.post<any>('/financial/receivables', {
+      customerName: receivable.customer_name,
+      customerPhone: receivable.customer_phone || null,
+      customerId: receivable.customer_id || null,
+      appointmentId: receivable.appointment_id || null,
+      serviceName: receivable.service_name || null,
+      professionalName: receivable.professional_name || null,
       description: receivable.description,
-      original_amount: receivable.original_amount,
+      originalAmount: receivable.original_amount,
       discount: receivable.discount || 0,
       surcharge: receivable.surcharge || 0,
-      final_amount: receivable.final_amount,
-      amount_paid: receivable.amount_paid || 0,
-      payment_method: receivable.payment_method,
-      due_date: receivable.due_date,
-      paid_at: receivable.paid_at || null,
+      finalAmount: receivable.final_amount,
+      amountPaid: receivable.amount_paid || 0,
+      paymentMethod: receivable.payment_method,
+      dueDate: receivable.due_date,
+      paidAt: receivable.paid_at || null,
       status: receivable.status,
-      has_signal: receivable.has_signal || false,
+      hasSignal: receivable.has_signal || false,
+      signalAmount: receivable.signal_amount || null,
+      signalPaid: receivable.signal_paid || false,
       notes: receivable.notes || null,
     });
-
-    if (error) {
-      console.warn('Erro ao salvar recebível no Supabase:', error);
-    }
+    return mapBackendReceivable(res);
   },
 
-  async updateReceivable(id: string, updates: Partial<Receivable>): Promise<void> {
-    if (!isSupabaseConfigured()) return;
+  async updateReceivable(id: string, updates: Partial<Receivable>): Promise<Receivable> {
+    const payload: any = {};
+    if (updates.customer_name) payload.customerName = updates.customer_name;
+    if (updates.description) payload.description = updates.description;
+    if (updates.original_amount !== undefined) payload.originalAmount = updates.original_amount;
+    if (updates.final_amount !== undefined) payload.finalAmount = updates.final_amount;
+    if (updates.amount_paid !== undefined) payload.amountPaid = updates.amount_paid;
+    if (updates.payment_method) payload.paymentMethod = updates.payment_method;
+    if (updates.due_date) payload.dueDate = updates.due_date;
+    if (updates.paid_at !== undefined) payload.paidAt = updates.paid_at;
+    if (updates.status) payload.status = updates.status;
+    if (updates.notes !== undefined) payload.notes = updates.notes;
 
-    const { error } = await supabase
-      .from('financial_receivables')
-      .update(updates)
-      .eq('id', id);
+    const res = await apiClient.put<any>(`/financial/receivables/${id}`, payload);
+    return mapBackendReceivable(res);
+  },
 
-    if (error) {
-      console.warn('Erro ao atualizar recebível no Supabase:', error);
-    }
+  async markReceivablePaid(id: string, paymentMethod?: string, paidAt?: string): Promise<Receivable> {
+    const res = await apiClient.patch<any>(`/financial/receivables/${id}/pay`, { paymentMethod, paidAt });
+    return mapBackendReceivable(res);
   },
 
   async deleteReceivable(id: string): Promise<void> {
-    if (!isSupabaseConfigured()) return;
-
-    const { error } = await supabase
-      .from('financial_receivables')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.warn('Erro ao excluir recebível no Supabase:', error);
-    }
+    await apiClient.delete(`/financial/receivables/${id}`);
   },
 
-  // Payables (Contas a Pagar)
-  async getPayables(tenantId: string): Promise<Payable[]> {
-    if (!isSupabaseConfigured()) return [];
-
-    const { data, error } = await supabase
-      .from('financial_payables')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .order('due_date', { ascending: false });
-
-    if (error) {
-      console.warn('Erro ao carregar despesas do Supabase:', error);
-      return [];
-    }
-
-    return (data || []).map((p: any) => ({
-      id: p.id,
-      description: p.description,
-      category: p.category,
-      amount: Number(p.amount),
-      paid_amount: Number(p.paid_amount || 0),
-      due_date: p.due_date,
-      paid_at: p.paid_at || undefined,
-      status: p.status,
-      supplier_name: p.supplier_name || undefined,
-      professional_name: p.professional_name || undefined,
-      payment_method: p.payment_method || undefined,
-      is_recurring: Boolean(p.is_recurring),
-      recurrence_type: p.recurrence_type || undefined,
-      notes: p.notes || undefined,
-      created_at: p.created_at,
-    }));
+  // Payables
+  async getPayables(): Promise<Payable[]> {
+    const res = await apiClient.get<any[]>('/financial/payables');
+    return (res || []).map(mapBackendPayable);
   },
 
-  async createPayable(payable: Omit<Payable, 'id' | 'created_at'>, tenantId: string): Promise<void> {
-    if (!isSupabaseConfigured()) return;
-
-    const { error } = await supabase.from('financial_payables').insert({
-      tenant_id: tenantId,
+  async createPayable(payable: Omit<Payable, 'id' | 'created_at'>): Promise<Payable> {
+    const res = await apiClient.post<any>('/financial/payables', {
       description: payable.description,
       category: payable.category,
       amount: payable.amount,
-      paid_amount: payable.paid_amount || 0,
-      due_date: payable.due_date,
-      paid_at: payable.paid_at || null,
+      paidAmount: payable.paid_amount || 0,
+      dueDate: payable.due_date,
+      paidAt: payable.paid_at || null,
       status: payable.status,
-      supplier_name: payable.supplier_name || null,
-      professional_name: payable.professional_name || null,
-      payment_method: payable.payment_method || null,
-      is_recurring: payable.is_recurring || false,
-      recurrence_type: payable.recurrence_type || null,
+      supplierId: payable.supplier_id || null,
+      supplierName: payable.supplier_name || null,
+      professionalId: payable.professional_id || null,
+      professionalName: payable.professional_name || null,
+      paymentMethod: payable.payment_method || null,
+      isRecurring: payable.is_recurring || false,
+      recurrenceType: payable.recurrence_type || null,
       notes: payable.notes || null,
     });
-
-    if (error) {
-      console.warn('Erro ao salvar despesa no Supabase:', error);
-    }
+    return mapBackendPayable(res);
   },
 
-  async updatePayable(id: string, updates: Partial<Payable>): Promise<void> {
-    if (!isSupabaseConfigured()) return;
+  async updatePayable(id: string, updates: Partial<Payable>): Promise<Payable> {
+    const payload: any = {};
+    if (updates.description) payload.description = updates.description;
+    if (updates.category) payload.category = updates.category;
+    if (updates.amount !== undefined) payload.amount = updates.amount;
+    if (updates.paid_amount !== undefined) payload.paidAmount = updates.paid_amount;
+    if (updates.due_date) payload.dueDate = updates.due_date;
+    if (updates.paid_at !== undefined) payload.paidAt = updates.paid_at;
+    if (updates.status) payload.status = updates.status;
+    if (updates.payment_method !== undefined) payload.paymentMethod = updates.payment_method;
+    if (updates.notes !== undefined) payload.notes = updates.notes;
 
-    const { error } = await supabase
-      .from('financial_payables')
-      .update(updates)
-      .eq('id', id);
+    const res = await apiClient.put<any>(`/financial/payables/${id}`, payload);
+    return mapBackendPayable(res);
+  },
 
-    if (error) {
-      console.warn('Erro ao atualizar despesa no Supabase:', error);
-    }
+  async markPayablePaid(id: string, paidAmount?: number, paymentMethod?: string, paidAt?: string): Promise<Payable> {
+    const res = await apiClient.patch<any>(`/financial/payables/${id}/pay`, { paidAmount, paymentMethod, paidAt });
+    return mapBackendPayable(res);
   },
 
   async deletePayable(id: string): Promise<void> {
-    if (!isSupabaseConfigured()) return;
+    await apiClient.delete(`/financial/payables/${id}`);
+  },
 
-    const { error } = await supabase
-      .from('financial_payables')
-      .delete()
-      .eq('id', id);
+  // Suppliers
+  async getSuppliers(): Promise<Supplier[]> {
+    const res = await apiClient.get<any[]>('/financial/suppliers');
+    return (res || []).map(mapBackendSupplier);
+  },
 
-    if (error) {
-      console.warn('Erro ao excluir despesa no Supabase:', error);
-    }
+  async createSupplier(supplier: Omit<Supplier, 'id' | 'created_at'>): Promise<Supplier> {
+    const res = await apiClient.post<any>('/financial/suppliers', {
+      name: supplier.name,
+      tradeName: supplier.trade_name || null,
+      document: supplier.document,
+      phone: supplier.phone,
+      email: supplier.email || null,
+      address: supplier.address || null,
+      carrierName: supplier.carrier_name || null,
+      category: supplier.category || 'Geral',
+      notes: supplier.notes || null,
+    });
+    return mapBackendSupplier(res);
+  },
+
+  async updateSupplier(id: string, updates: Partial<Supplier>): Promise<Supplier> {
+    const payload: any = {};
+    if (updates.name) payload.name = updates.name;
+    if (updates.trade_name !== undefined) payload.tradeName = updates.trade_name;
+    if (updates.document) payload.document = updates.document;
+    if (updates.phone) payload.phone = updates.phone;
+    if (updates.email !== undefined) payload.email = updates.email;
+    if (updates.address !== undefined) payload.address = updates.address;
+    if (updates.carrier_name !== undefined) payload.carrierName = updates.carrier_name;
+    if (updates.category) payload.category = updates.category;
+    if (updates.notes !== undefined) payload.notes = updates.notes;
+
+    const res = await apiClient.put<any>(`/financial/suppliers/${id}`, payload);
+    return mapBackendSupplier(res);
+  },
+
+  async deleteSupplier(id: string): Promise<void> {
+    await apiClient.delete(`/financial/suppliers/${id}`);
+  },
+
+  // Merchandise & Estoque
+  async getMerchandise(): Promise<Merchandise[]> {
+    const res = await apiClient.get<any[]>('/financial/merchandise');
+    return (res || []).map(mapBackendMerchandise);
+  },
+
+  async createMerchandise(merchandise: Omit<Merchandise, 'id' | 'created_at' | 'total_cost'>): Promise<Merchandise> {
+    const res = await apiClient.post<any>('/financial/merchandise', {
+      name: merchandise.name,
+      supplierId: merchandise.supplier_id || null,
+      supplierName: merchandise.supplier_name || null,
+      carrierName: merchandise.carrier_name || null,
+      quantity: merchandise.quantity || 0,
+      minQuantity: merchandise.min_quantity !== undefined ? merchandise.min_quantity : 5,
+      unit: merchandise.unit || 'un',
+      costPrice: merchandise.cost_price,
+      salePrice: merchandise.sale_price || null,
+      lastRestockDate: merchandise.last_restock_date || null,
+    });
+    return mapBackendMerchandise(res);
+  },
+
+  async adjustStock(id: string, type: 'entry' | 'exit' | 'adjustment', quantityDelta: number, reason?: string): Promise<Merchandise> {
+    const res = await apiClient.post<any>(`/financial/merchandise/${id}/adjust`, {
+      type,
+      quantityDelta,
+      reason,
+    });
+    return mapBackendMerchandise(res);
+  },
+
+  async deleteMerchandise(id: string): Promise<void> {
+    await apiClient.delete(`/financial/merchandise/${id}`);
+  },
+
+  // Deposit Config
+  async getDepositConfig(): Promise<DepositConfig> {
+    const res = await apiClient.get<any>('/financial/deposit-config');
+    return {
+      enabled: Boolean(res.enabled),
+      type: res.type || 'percentage',
+      value: Number(res.value || 30),
+      require_pix_receipt: true,
+      instructions: 'Para confirmar seu agendamento, realize o pagamento do sinal via Pix.',
+    };
+  },
+
+  async updateDepositConfig(config: Partial<DepositConfig>): Promise<DepositConfig> {
+    const res = await apiClient.put<any>('/financial/deposit-config', {
+      enabled: Boolean(config.enabled),
+      type: config.type || 'percentage',
+      value: Number(config.value || 30),
+    });
+    return {
+      enabled: Boolean(res.enabled),
+      type: res.type || 'percentage',
+      value: Number(res.value || 30),
+      require_pix_receipt: true,
+      instructions: 'Para confirmar seu agendamento, realize o pagamento do sinal via Pix.',
+    };
   },
 };

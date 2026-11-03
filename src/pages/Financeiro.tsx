@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFinancialStore } from '../stores/financialStore';
 import { useUIStore } from '../stores/uiStore';
 import { FinancialPeriod } from '../types/financeiro';
@@ -29,9 +29,13 @@ import {
 } from 'lucide-react';
 
 export default function Financeiro() {
-  const { activePeriod, setActivePeriod, clearAllFinancialData } = useFinancialStore();
+  const { activePeriod, setActivePeriod, clearAllFinancialData, fetchFinancialData } = useFinancialStore();
   const { addToast } = useUIStore();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+
+  useEffect(() => {
+    fetchFinancialData();
+  }, [fetchFinancialData]);
 
   const [isReceivableModalOpen, setIsReceivableModalOpen] = useState(false);
   const [isPayableModalOpen, setIsPayableModalOpen] = useState(false);

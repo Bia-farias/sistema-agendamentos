@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useServiceStore } from '../../stores/serviceStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
 import { Drawer } from '../ui/Drawer';
 import { Button } from '../ui/Button';
@@ -8,6 +9,7 @@ import { Select } from '../ui/Select';
 import { Check, Scissors, Clock, DollarSign, Tag } from 'lucide-react';
 
 export function NovoServicoDrawer() {
+  const { tenant } = useAuthStore();
   const { services, activeDrawer, closeDrawer, addService, updateService } =
     useServiceStore();
   const { addToast } = useUIStore();
@@ -46,7 +48,7 @@ export function NovoServicoDrawer() {
     }
   }, [editingService, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim()) {
@@ -65,7 +67,7 @@ export function NovoServicoDrawer() {
       const parsedDuration = parseInt(durationMinutes) || 30;
 
       if (isEdit && editingService) {
-        updateService(editingService.id, {
+        await updateService(editingService.id, {
           name: name.trim(),
           description: description.trim() || undefined,
           category,
@@ -80,8 +82,8 @@ export function NovoServicoDrawer() {
           message: `${name} foi atualizado com sucesso.`,
         });
       } else {
-        addService({
-          tenant_id: 'tenant-1001',
+        await addService({
+          tenant_id: tenant?.id || 'tenant-1001',
           name: name.trim(),
           description: description.trim() || undefined,
           category,

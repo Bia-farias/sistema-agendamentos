@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useServiceStore } from '../stores/serviceStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -18,6 +18,7 @@ import { formatCurrency } from '../utils/format';
 
 export default function Servicos() {
   const {
+    fetchServices,
     services,
     selectedCategory,
     setSelectedCategory,
@@ -26,6 +27,10 @@ export default function Servicos() {
     toggleServiceActive,
     deleteService,
   } = useServiceStore();
+
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
   const categories = ['all', 'Cabelo', 'Barbearia', 'Unhas', 'Estética Facial', 'Corporal'];
 

@@ -43,6 +43,9 @@ function buildSystemPrompt(): string {
   });
   const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
+  const profile = useAuthStore.getState().profile;
+  const isManager = profile?.role === 'owner' || profile?.role === 'admin' || profile?.role === 'super_admin';
+
   const vipCustomers = customers.filter((c) => c.is_vip);
   const inactiveCustomers = customers.filter((c) => c.appointments_count <= 2);
   const activeServices = services.filter((s) => s.is_active);
@@ -51,7 +54,7 @@ function buildSystemPrompt(): string {
   const todayAptsStr = todayAppointments
     .map(
       (a) =>
-        `  - ${a.start_time}–${a.end_time}: ${a.customer_name} → ${a.service_name} com ${a.professional_name} [${a.status}] R$ ${a.total_price.toFixed(2)}`
+        `  - ${a.start_time}–${a.end_time}: ${a.customer_name} → ${a.service_name} com ${a.professional_name} [${a.status}]${isManager ? ` R$ ${a.total_price.toFixed(2)}` : ''}`
     )
     .join('\n');
 
@@ -60,15 +63,15 @@ function buildSystemPrompt(): string {
     .join('\n');
 
   const professionalsStr = activeProfessionals
-    .map((p) => `  - ${p.name} | ${p.role} | Especialidades: ${p.specialties.join(', ')} | Comissão: ${p.commission_percentage}%`)
+    .map((p) => `  - ${p.name} | ${p.role} | Especialidades: ${p.specialties.join(', ')}${isManager ? ` | Comissão: ${p.commission_percentage}%` : ''}`)
     .join('\n');
 
   const vipStr = vipCustomers
-    .map((c) => `  - ${c.name} | ${c.appointments_count} visitas | R$ ${c.total_spent.toFixed(2)} investidos`)
+    .map((c) => `  - ${c.name} | ${c.appointments_count} visitas${isManager ? ` | R$ ${c.total_spent.toFixed(2)} investidos` : ''}`)
     .join('\n');
 
   const inactiveStr = inactiveCustomers
-    .map((c) => `  - ${c.name} | Última visita: ${c.last_visit_at || 'desconhecida'} | Telefone: ${c.phone}`)
+    .map((c) => `  - ${c.name} | Última visita: ${c.last_visit_at || 'desconhecida'}`)
     .join('\n');
 
   return `Você é o Assistente IA do sistema "${tenant?.name || 'Meu Estabelecimento'}", um software de gestão de agendamentos para salões de beleza, barbearias e clínicas estéticas.
@@ -85,12 +88,12 @@ Você tem acesso em tempo real aos dados do negócio e deve responder de forma a
 
 == KPIs DE HOJE ==
 
-💰 Faturamento do dia: R$ ${kpis.todayRevenue.toFixed(2)}
+${isManager ? `💰 Faturamento do dia: R$ ${kpis.todayRevenue.toFixed(2)}` : '💰 Faturamento do dia: [Restrito a Administradores]'}
 📋 Total de agendamentos: ${kpis.todayAppointmentsCount}
 ✅ Concluídos: ${kpis.todayCompletedCount}
 ⏳ Pendentes: ${kpis.todayPendingCount}
 📊 Taxa de ocupação: ${kpis.occupancyRate}%
-📈 Variação semanal receita: +${kpis.weeklyRevenueChange}%
+${isManager ? `📈 Variação semanal receita: +${kpis.weeklyRevenueChange}%` : ''}
 
 == AGENDAMENTOS DE HOJE ==
 

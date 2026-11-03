@@ -69,10 +69,31 @@ export default function App() {
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/servicos" element={<Servicos />} />
-            <Route path="/profissionais" element={<Profissionais />} />
-            <Route path="/financeiro" element={<Financeiro />} />
+            <Route
+              path="/profissionais"
+              element={
+                <ProtectedRoute allowedRoles={['owner', 'admin', 'super_admin']}>
+                  <Profissionais />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/financeiro"
+              element={
+                <ProtectedRoute allowedRoles={['owner', 'admin', 'super_admin']}>
+                  <Financeiro />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/whatsapp" element={<WhatsApp />} />
-            <Route path="/configuracoes" element={<Configuracoes />} />
+            <Route
+              path="/configuracoes"
+              element={
+                <ProtectedRoute allowedRoles={['owner', 'admin', 'super_admin']}>
+                  <Configuracoes />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           {/* Fallback */}

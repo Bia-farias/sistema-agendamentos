@@ -205,7 +205,7 @@ export default function AgendamentoCliente() {
     setTimeout(() => setCopiedPix(false), 3000);
   };
 
-  const handleConfirmAppointment = () => {
+  const handleConfirmAppointment = async () => {
     if (!selectedService || !selectedTimeSlot) return;
 
     // Se selecionou "qualquer profissional", escolhe o primeiro disponível
@@ -246,7 +246,7 @@ export default function AgendamentoCliente() {
       if (existingCustomer) {
         customerId = existingCustomer.id;
       } else {
-        const createdCustomer = addCustomer({
+        const createdCustomer = await addCustomer({
           tenant_id: tenant?.id || 'tenant-1001',
           name: customerName.trim(),
           phone: customerPhone.trim(),
@@ -257,7 +257,7 @@ export default function AgendamentoCliente() {
 
       // 2. Cria agendamento
       const hasSignal = depositConfig.enabled && depositAmount > 0;
-      const apt = addAppointment({
+      const apt = await addAppointment({
         tenant_id: tenant?.id || 'tenant-1001',
         customer_id: customerId,
         customer_name: customerName.trim(),

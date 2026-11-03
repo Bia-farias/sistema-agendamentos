@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCustomerStore } from '../stores/customerStore';
 import { useAuthStore } from '../stores/authStore';
 import { Input } from '../components/ui/Input';
@@ -36,6 +36,7 @@ export default function Clientes() {
   const { appointments } = useAppointmentStore();
   const { addToast } = useUIStore();
   const {
+    fetchCustomers,
     searchQuery,
     setSearchQuery,
     filterTab,
@@ -46,6 +47,10 @@ export default function Clientes() {
     getFilteredCustomers,
     customers,
   } = useCustomerStore();
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
 
   const [viewLayout, setViewLayout] = useState<'grid' | 'table'>('grid');
 
