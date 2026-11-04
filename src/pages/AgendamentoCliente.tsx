@@ -34,7 +34,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useUIStore } from '../stores/uiStore';
 import { formatCurrency, formatDate } from '../utils/format';
 import { maskPhone } from '../utils/masks';
-import { getTodayDateString } from '../services/mockData';
+import { getTodayDateString, initialTenant } from '../services/mockData';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 
@@ -95,86 +95,83 @@ export default function AgendamentoCliente() {
       } catch (err: any) {
         console.warn('Erro ao carregar dados do salão:', err);
         // Fallback elegante se a API estiver em mock ou offline
-        if (tenant) {
-          setSalon({
-            id: tenant.id,
-            name: tenant.name,
-            slug: tenant.slug,
-            businessType: tenant.business_type,
-            phone: tenant.phone || '(11) 98888-7777',
-            email: tenant.email,
-            address: tenant.address || 'Av. Paulista, 1000 - Bela Vista, São Paulo - SP',
-            logoUrl: tenant.logo_url,
-            coverUrl: tenant.cover_url,
-            galleryUrls: tenant.gallery_urls || [],
-            description: tenant.description || 'Bem-vindo ao nosso espaço de beleza e bem-estar. Escolha seu especialista e agende com comodidade.',
-            whatsapp: tenant.whatsapp || tenant.phone,
-            instagram: tenant.instagram || '@studioprime',
-            facebook: tenant.facebook,
-            primaryColor: tenant.primary_color || '#7c3aed',
-            openingTime: tenant.settings?.opening_time || '08:00',
-            closingTime: tenant.settings?.closing_time || '20:00',
-            intervalMinutes: tenant.settings?.interval_minutes || 30,
-            allowOnlineBooking: tenant.settings?.allow_online_booking ?? true,
-            services: [
-              { id: 'srv-1', name: 'Corte Feminino & Escova', category: 'Cabelo', price: 140, durationMinutes: 60, color: '#8b5cf6', description: 'Lavagem especial, corte estilizado e escova modeladora.' },
-              { id: 'srv-2', name: 'Corte Degradê Masculino', category: 'Barbearia', price: 80, durationMinutes: 45, color: '#06b6d4', description: 'Fade na navalha com acabamento e alinhamento de fios.' },
-              { id: 'srv-3', name: 'Mechas Criativas / Balayage', category: 'Cabelo', price: 480, durationMinutes: 180, color: '#ec4899', description: 'Técnica personalizada de iluminação com proteção Plex.' },
-              { id: 'srv-4', name: 'Alongamento em Gel (Unhas)', category: 'Unhas', price: 220, durationMinutes: 120, color: '#f59e0b', description: 'Alongamento em fibra de vidro com cutilagem e esmaltação em gel.' },
-              { id: 'srv-5', name: 'Limpeza de Pele Profunda', category: 'Estética', price: 180, durationMinutes: 90, color: '#10b981', description: 'Higienização, vapor de ozônio, extração de cravos e máscara LED.' },
-            ],
-            professionals: [
-              {
-                id: 'pro-1',
-                name: 'Camila Albuquerque',
-                role: 'Master Stylist & Visagista',
-                specialties: ['Corte Feminino', 'Mechas', 'Colorimetria'],
-                avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80',
-                color: '#ec4899',
-                bio: 'Mais de 10 anos de experiência com cortes modernos e mechas personalizadas. Apaixonada por realçar sua melhor versão.',
-                portfolioUrls: [
-                  'https://images.unsplash.com/photo-1560869713-7d0a29430803?w=600&auto=format&fit=crop&q=80',
-                  'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80',
-                ],
-                workingHoursStart: '09:00',
-                workingHoursEnd: '19:00',
-                workingDays: [1, 2, 3, 4, 5, 6],
-              },
-              {
-                id: 'pro-2',
-                name: 'Lucas Ferreira',
-                role: 'Barbeiro Visagista & Terapeuta Capilar',
-                specialties: ['Barba', 'Corte Degradê', 'Terapia Capilar'],
-                avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-                color: '#06b6d4',
-                bio: 'Especialista em cortes masculinos clássicos e visagismo. Experiência em barboterapia e tratamentos de couro cabeludo.',
-                portfolioUrls: [
-                  'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&auto=format&fit=crop&q=80',
-                ],
-                workingHoursStart: '09:00',
-                workingHoursEnd: '19:00',
-                workingDays: [1, 2, 3, 4, 5, 6],
-              },
-              {
-                id: 'pro-3',
-                name: 'Beatriz Lima',
-                role: 'Nail Designer & Podóloga',
-                specialties: ['Alongamento Gel', 'Esmaltação em Gel', 'Podologia'],
-                avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
-                color: '#f59e0b',
-                bio: 'Cuidado e perfeccionismo para a saúde e beleza das suas unhas. Técnicas avançadas de biossegurança.',
-                portfolioUrls: [
-                  'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&auto=format&fit=crop&q=80',
-                ],
-                workingHoursStart: '09:00',
-                workingHoursEnd: '19:00',
-                workingDays: [1, 2, 3, 4, 5, 6],
-              },
-            ],
-          });
-        } else {
-          setLoadError(err.message || 'Estabelecimento não encontrado.');
-        }
+        const fallback = tenant || initialTenant;
+        setSalon({
+          id: fallback.id,
+          name: fallback.name,
+          slug: fallback.slug,
+          businessType: fallback.business_type,
+          phone: fallback.phone || '(11) 98888-7777',
+          email: fallback.email,
+          address: fallback.address || 'Av. Paulista, 1000 - Bela Vista, São Paulo - SP',
+          logoUrl: fallback.logo_url,
+          coverUrl: fallback.cover_url,
+          galleryUrls: fallback.gallery_urls || [],
+          description: fallback.description || 'Bem-vindo ao nosso espaço de beleza e bem-estar. Escolha seu especialista e agende com comodidade.',
+          whatsapp: fallback.whatsapp || fallback.phone,
+          instagram: fallback.instagram || '@studioprime',
+          facebook: fallback.facebook,
+          primaryColor: fallback.primary_color || '#7c3aed',
+          openingTime: fallback.settings?.opening_time || '08:00',
+          closingTime: fallback.settings?.closing_time || '20:00',
+          intervalMinutes: fallback.settings?.interval_minutes || 30,
+          allowOnlineBooking: fallback.settings?.allow_online_booking ?? true,
+          services: [
+            { id: 'srv-1', name: 'Corte Feminino & Escova', category: 'Cabelo', price: 140, durationMinutes: 60, color: '#8b5cf6', description: 'Lavagem especial, corte estilizado e escova modeladora.' },
+            { id: 'srv-2', name: 'Corte Degradê Masculino', category: 'Barbearia', price: 80, durationMinutes: 45, color: '#06b6d4', description: 'Fade na navalha com acabamento e alinhamento de fios.' },
+            { id: 'srv-3', name: 'Mechas Criativas / Balayage', category: 'Cabelo', price: 480, durationMinutes: 180, color: '#ec4899', description: 'Técnica personalizada de iluminação com proteção Plex.' },
+            { id: 'srv-4', name: 'Alongamento em Gel (Unhas)', category: 'Unhas', price: 220, durationMinutes: 120, color: '#f59e0b', description: 'Alongamento em fibra de vidro com cutilagem e esmaltação em gel.' },
+            { id: 'srv-5', name: 'Limpeza de Pele Profunda', category: 'Estética', price: 180, durationMinutes: 90, color: '#10b981', description: 'Higienização, vapor de ozônio, extração de cravos e máscara LED.' },
+          ],
+          professionals: [
+            {
+              id: 'pro-1',
+              name: 'Camila Albuquerque',
+              role: 'Master Stylist & Visagista',
+              specialties: ['Corte Feminino', 'Mechas', 'Colorimetria'],
+              avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80',
+              color: '#ec4899',
+              bio: 'Mais de 10 anos de experiência com cortes modernos e mechas personalizadas. Apaixonada por realçar sua melhor versão.',
+              portfolioUrls: [
+                'https://images.unsplash.com/photo-1560869713-7d0a29430803?w=600&auto=format&fit=crop&q=80',
+                'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80',
+              ],
+              workingHoursStart: '09:00',
+              workingHoursEnd: '19:00',
+              workingDays: [1, 2, 3, 4, 5, 6],
+            },
+            {
+              id: 'pro-2',
+              name: 'Lucas Ferreira',
+              role: 'Barbeiro Visagista & Terapeuta Capilar',
+              specialties: ['Barba', 'Corte Degradê', 'Terapia Capilar'],
+              avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+              color: '#06b6d4',
+              bio: 'Especialista em cortes masculinos clássicos e visagismo. Experiência em barboterapia e tratamentos de couro cabeludo.',
+              portfolioUrls: [
+                'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&auto=format&fit=crop&q=80',
+              ],
+              workingHoursStart: '09:00',
+              workingHoursEnd: '19:00',
+              workingDays: [1, 2, 3, 4, 5, 6],
+            },
+            {
+              id: 'pro-3',
+              name: 'Beatriz Lima',
+              role: 'Nail Designer & Podóloga',
+              specialties: ['Alongamento Gel', 'Esmaltação em Gel', 'Podologia'],
+              avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
+              color: '#f59e0b',
+              bio: 'Cuidado e perfeccionismo para a saúde e beleza das suas unhas. Técnicas avançadas de biossegurança.',
+              portfolioUrls: [
+                'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&auto=format&fit=crop&q=80',
+              ],
+              workingHoursStart: '09:00',
+              workingHoursEnd: '19:00',
+              workingDays: [1, 2, 3, 4, 5, 6],
+            },
+          ],
+        });
       } finally {
         setIsLoadingSalon(false);
       }

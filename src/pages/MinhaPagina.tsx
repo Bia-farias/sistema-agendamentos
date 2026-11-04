@@ -124,9 +124,14 @@ export default function MinhaPagina() {
     loadData();
   }, []);
 
-  const fullPublicUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/#/agendar/${slug}`
-    : `https://agendaai.com.br/#/agendar/${slug}`;
+  const getPublicBaseUrl = () => {
+    if (typeof window === 'undefined') return 'https://agendaai.com.br';
+    const origin = window.location.origin;
+    const pathname = window.location.pathname.replace(/\/$/, '');
+    return `${origin}${pathname}`;
+  };
+
+  const fullPublicUrl = `${getPublicBaseUrl()}/#/agendar/${slug}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(fullPublicUrl);
