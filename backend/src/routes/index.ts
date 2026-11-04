@@ -9,6 +9,7 @@ import { publicScheduleRoutes } from './publicScheduleRoutes.js';
 import { financialRoutes } from './financialRoutes.js';
 import aiRoutes from './aiRoutes.js';
 import whatsappRoutes from './whatsappRoutes.js';
+import tenantRoutes from './tenantRoutes.js';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use('/public/schedule', publicScheduleRoutes);
 router.use('/financial', financialRoutes);
 router.use('/ai', aiRoutes);
 router.use('/whatsapp', whatsappRoutes);
+router.use('/tenant', tenantRoutes);
 
 export { router as appRoutes };
 

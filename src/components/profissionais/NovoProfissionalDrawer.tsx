@@ -29,6 +29,11 @@ export function NovoProfissionalDrawer() {
   const [specialtiesText, setSpecialtiesText] = useState('');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('19:00');
+  const [breakStart, setBreakStart] = useState('12:00');
+  const [breakEnd, setBreakEnd] = useState('13:00');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [bio, setBio] = useState('');
+  const [portfolioText, setPortfolioText] = useState('');
   const [color, setColor] = useState('#8b5cf6');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,6 +47,11 @@ export function NovoProfissionalDrawer() {
       setSpecialtiesText(editingProf.specialties.join(', '));
       setStartTime(editingProf.working_hours?.start || '09:00');
       setEndTime(editingProf.working_hours?.end || '19:00');
+      setBreakStart(editingProf.break_start || '12:00');
+      setBreakEnd(editingProf.break_end || '13:00');
+      setAvatarUrl(editingProf.avatar_url || '');
+      setBio(editingProf.bio || '');
+      setPortfolioText((editingProf.portfolio_urls || []).join('\n'));
       setColor(editingProf.color || '#8b5cf6');
     } else {
       setName('');
@@ -52,6 +62,11 @@ export function NovoProfissionalDrawer() {
       setSpecialtiesText('');
       setStartTime('09:00');
       setEndTime('19:00');
+      setBreakStart('12:00');
+      setBreakEnd('13:00');
+      setAvatarUrl('');
+      setBio('');
+      setPortfolioText('');
       setColor('#8b5cf6');
     }
   }, [editingProf, isOpen]);
@@ -76,12 +91,20 @@ export function NovoProfissionalDrawer() {
         .map((s) => s.trim())
         .filter(Boolean);
 
+      const portfolioUrls = portfolioText
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
       if (isEdit && editingProf) {
         await updateProfessional(editingProf.id, {
           name: name.trim(),
           role: role.trim(),
           phone: phone.trim() || undefined,
           email: email.trim() || undefined,
+          avatar_url: avatarUrl.trim() || undefined,
+          bio: bio.trim() || undefined,
+          portfolio_urls: portfolioUrls,
           commission_percentage: parseFloat(commission) || 0,
           specialties: specialties.length > 0 ? specialties : [role.trim()],
           color,
@@ -90,6 +113,8 @@ export function NovoProfissionalDrawer() {
             end: endTime,
             days_of_week: [1, 2, 3, 4, 5, 6],
           },
+          break_start: breakStart || undefined,
+          break_end: breakEnd || undefined,
         });
 
         addToast({
@@ -104,6 +129,9 @@ export function NovoProfissionalDrawer() {
           role: role.trim(),
           phone: phone.trim() || undefined,
           email: email.trim() || undefined,
+          avatar_url: avatarUrl.trim() || undefined,
+          bio: bio.trim() || undefined,
+          portfolio_urls: portfolioUrls,
           commission_percentage: parseFloat(commission) || 0,
           specialties: specialties.length > 0 ? specialties : [role.trim()],
           color,
@@ -113,6 +141,8 @@ export function NovoProfissionalDrawer() {
             end: endTime,
             days_of_week: [1, 2, 3, 4, 5, 6],
           },
+          break_start: breakStart || undefined,
+          break_end: breakEnd || undefined,
         });
 
         addToast({
@@ -239,6 +269,71 @@ export function NovoProfissionalDrawer() {
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
               className="w-full rounded-xl bg-zinc-50/80 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 text-sm px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400"
+            />
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-2xl bg-violet-50/60 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/30 space-y-3">
+          <span className="text-xs font-extrabold text-violet-700 dark:text-violet-300 uppercase tracking-wider flex items-center gap-1.5">
+            <Sparkles size={14} />
+            Perfil Público no Mini-Site
+          </span>
+
+          <Input
+            label="URL da Foto de Perfil"
+            placeholder="https://exemplo.com/minha-foto.jpg"
+            value={avatarUrl}
+            onChange={(e) => setAvatarUrl(e.target.value)}
+          />
+
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              Biografia / Apresentação
+            </label>
+            <textarea
+              rows={2}
+              placeholder="Ex: Especialista em colorimetria e corte visagista com mais de 8 anos de experiência..."
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              className="w-full rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 text-xs p-3 focus:outline-none focus:ring-2 focus:ring-violet-400"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+                Início Almoço
+              </label>
+              <input
+                type="time"
+                value={breakStart}
+                onChange={(e) => setBreakStart(e.target.value)}
+                className="w-full rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-xs p-2"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+                Fim Almoço
+              </label>
+              <input
+                type="time"
+                value={breakEnd}
+                onChange={(e) => setBreakEnd(e.target.value)}
+                className="w-full rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-xs p-2"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+              Galeria de Trabalhos (uma URL por linha)
+            </label>
+            <textarea
+              rows={2}
+              placeholder="https://exemplo.com/trabalho1.jpg&#10;https://exemplo.com/trabalho2.jpg"
+              value={portfolioText}
+              onChange={(e) => setPortfolioText(e.target.value)}
+              className="w-full rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 text-xs p-3 focus:outline-none focus:ring-2 focus:ring-violet-400 font-mono"
             />
           </div>
         </div>

@@ -13,6 +13,7 @@ import {
   ChevronRight,
   LogOut,
   Settings,
+  Globe,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -43,6 +44,7 @@ export function Sidebar() {
     { label: 'Profissionais', path: '/profissionais', icon: UserCheck, roles: ['super_admin', 'owner', 'admin'] },
     { label: 'Financeiro', path: '/financeiro', icon: DollarSign, roles: ['super_admin', 'owner', 'admin'] },
     { label: 'WhatsApp', path: '/whatsapp', icon: MessageSquare, roles: ['super_admin', 'owner', 'admin', 'receptionist'] },
+    { label: 'Minha Página', path: '/minha-pagina', icon: Globe, roles: ['super_admin', 'owner', 'admin'] },
     { label: 'Configurações', path: '/configuracoes', icon: Settings, roles: ['super_admin', 'owner', 'admin'] },
     {
       label: 'Assistente IA',

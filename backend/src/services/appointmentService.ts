@@ -368,7 +368,14 @@ export const appointmentService = {
         phone: true,
         email: true,
         logoUrl: true,
+        coverUrl: true,
+        galleryUrls: true,
+        description: true,
         address: true,
+        whatsapp: true,
+        instagram: true,
+        facebook: true,
+        primaryColor: true,
         openingTime: true,
         closingTime: true,
         intervalMinutes: true,
@@ -395,8 +402,12 @@ export const appointmentService = {
             specialties: true,
             avatarUrl: true,
             color: true,
+            bio: true,
+            portfolioUrls: true,
             workingHoursStart: true,
             workingHoursEnd: true,
+            breakStart: true,
+            breakEnd: true,
             workingDays: true,
           },
           orderBy: { name: 'asc' },
@@ -446,12 +457,38 @@ export const appointmentService = {
       orderBy: { startTime: 'asc' },
     });
 
+    const busySlots: Array<{
+      id: string;
+      professionalId: string;
+      startTime: string;
+      endTime: string;
+      durationMinutes: number;
+    }> = [...appointments];
+
+    // Se um profissional específico foi selecionado, bloqueia também seu horário de almoço
+    if (professionalId) {
+      const prof = await prisma.professional.findUnique({
+        where: { id: professionalId },
+        select: { breakStart: true, breakEnd: true },
+      });
+
+      if (prof?.breakStart && prof?.breakEnd && prof.breakStart < prof.breakEnd) {
+        busySlots.push({
+          id: `break-${professionalId}`,
+          professionalId,
+          startTime: prof.breakStart,
+          endTime: prof.breakEnd,
+          durationMinutes: 60,
+        });
+      }
+    }
+
     return {
       date,
       openingTime: tenant.openingTime,
       closingTime: tenant.closingTime,
       intervalMinutes: tenant.intervalMinutes,
-      busySlots: appointments,
+      busySlots,
     };
   },
 

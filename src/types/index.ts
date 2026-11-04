@@ -10,8 +10,15 @@ export interface Tenant {
   phone?: string;
   email?: string;
   logo_url?: string;
+  cover_url?: string;
+  gallery_urls?: string[];
+  description?: string;
   business_type: 'barbershop' | 'beauty_salon' | 'aesthetic_clinic' | 'health_clinic' | 'other';
   address?: string;
+  whatsapp?: string;
+  instagram?: string;
+  facebook?: string;
+  primary_color?: string;
   settings?: {
     opening_time: string;
     closing_time: string;
@@ -77,6 +84,8 @@ export interface Professional {
   phone?: string;
   avatar_url?: string;
   role: string;
+  bio?: string;
+  portfolio_urls?: string[];
   specialties: string[];
   commission_percentage: number;
   color?: string;
@@ -86,6 +95,8 @@ export interface Professional {
     end: string;
     days_of_week: number[]; // 0 = Sunday, 1 = Monday ... 6 = Saturday
   };
+  break_start?: string;
+  break_end?: string;
 }
 
 export interface Appointment {

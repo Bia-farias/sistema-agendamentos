@@ -43,6 +43,10 @@ export const createProfessionalSchema = z.object({
     workingDays: z
       .array(z.number().int().min(0).max(6))
       .default([1, 2, 3, 4, 5, 6]),
+    bio: z.string().optional().nullable(),
+    portfolioUrls: z.array(z.string()).optional().default([]),
+    breakStart: z.string().regex(timeRegex, 'Intervalo inicial deve estar no formato HH:mm').optional().default('12:00'),
+    breakEnd: z.string().regex(timeRegex, 'Intervalo final deve estar no formato HH:mm').optional().default('13:00'),
   }),
 });
 
@@ -90,6 +94,10 @@ export const updateProfessionalSchema = z.object({
     workingDays: z
       .array(z.number().int().min(0).max(6))
       .optional(),
+    bio: z.string().optional().nullable(),
+    portfolioUrls: z.array(z.string()).optional(),
+    breakStart: z.string().regex(timeRegex, 'Intervalo inicial deve estar no formato HH:mm').optional().nullable(),
+    breakEnd: z.string().regex(timeRegex, 'Intervalo final deve estar no formato HH:mm').optional().nullable(),
   }),
 });
 

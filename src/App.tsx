@@ -19,6 +19,7 @@ const Profissionais = React.lazy(() => import('./pages/Profissionais'));
 const Financeiro = React.lazy(() => import('./pages/Financeiro'));
 const WhatsApp = React.lazy(() => import('./pages/WhatsApp'));
 const Configuracoes = React.lazy(() => import('./pages/Configuracoes'));
+const MinhaPagina = React.lazy(() => import('./pages/MinhaPagina'));
 const AgendamentoCliente = React.lazy(() => import('./pages/AgendamentoCliente'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 
@@ -49,6 +50,7 @@ export default function App() {
           {/* Página Pública de Agendamento Online para Clientes */}
           <Route path="/agendar" element={<AgendamentoCliente />} />
           <Route path="/agendar/:slug" element={<AgendamentoCliente />} />
+          <Route path="/p/:slug" element={<AgendamentoCliente />} />
 
           {/* Public Auth Routes */}
           <Route element={<AuthLayout />}>
@@ -86,6 +88,14 @@ export default function App() {
               }
             />
             <Route path="/whatsapp" element={<WhatsApp />} />
+            <Route
+              path="/minha-pagina"
+              element={
+                <ProtectedRoute allowedRoles={['owner', 'admin', 'super_admin']}>
+                  <MinhaPagina />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/configuracoes"
               element={

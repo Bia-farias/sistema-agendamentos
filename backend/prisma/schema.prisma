@@ -110,6 +110,16 @@ model Tenant {
   closingTime        String       @default("20:00")
   intervalMinutes    Int          @default(30)
   allowOnlineBooking Boolean      @default(true)
+  
+  // Customizações da Página Pública / Mini-Site do Estabelecimento
+  coverUrl           String?
+  galleryUrls        String[]     @default([])
+  description        String?
+  whatsapp           String?
+  instagram          String?
+  facebook           String?
+  primaryColor       String?      @default("#7c3aed")
+
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
@@ -202,6 +212,13 @@ model Professional {
   workingHoursStart    String   @default("09:00")
   workingHoursEnd      String   @default("19:00")
   workingDays          Int[]    @default([1, 2, 3, 4, 5, 6]) // 0=Dom, 1=Seg...
+  
+  // Perfil Público do Profissional no Mini-Site
+  bio                  String?
+  portfolioUrls        String[] @default([])
+  breakStart           String?  @default("12:00")
+  breakEnd             String?  @default("13:00")
+
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
