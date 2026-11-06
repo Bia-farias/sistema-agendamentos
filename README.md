@@ -77,19 +77,27 @@ Nos bastidores, o sistema conta com uma **arquitetura Multi-Tenant isolada**, **
 
 ---
 
-## 🔑 Acesso à Demonstração & Credenciais
+## 🔐 Autenticação, Cadastro & Segurança
 
-O banco de dados já está configurado com dados de exemplo prontos para teste imediato:
+O sistema opera com autenticação real baseada em **JWT e criptografia de senhas com Bcrypt (salt rounds 10)** conectada diretamente ao PostgreSQL no Supabase.
 
-| Perfil | E-mail de Teste | Senha Padrão | Permissões |
-| :--- | :--- | :--- | :--- |
-| **Proprietário (Owner)** | `admin@agendaai.com` | `123456` | Acesso irrestrito a todos os módulos, financeiro e página pública |
-| **Administrador** | `admin@studio.com` | `123456` | Gestão de agenda, clientes, serviços e equipe |
-| **Profissional** | `camila@studio.com` | `123456` | Visualização da própria agenda e atendimentos |
-| **Recepcionista** | `recepcao@studio.com` | `123456` | Agendamentos, confirmações e cadastro de clientes |
+### 🏢 Onboarding de Novos Estabelecimentos (SaaS Comercial)
+Cada novo cliente ou assinante pode criar sua conta e cadastrar seu estabelecimento em:
+* **Rota de Cadastro:** `/#/register`
+* Ao cadastrar, o sistema cria o **Tenant isolado** da empresa, gera o slug único da página de agendamento e atribui ao criador o perfil de **Proprietário (Owner)** com acesso total.
 
-> 🔗 **Página Pública Demo do Assinante:**  
-> Acesse: `http://localhost:5173/#/agendar/espaco-belle` para experimentar o fluxo de agendamento online do cliente final.
+### 🔑 Gestão e Redefinição de Senhas
+Para alterar ou redefinir a senha de qualquer usuário administrativo via terminal:
+```bash
+npm --prefix backend run user:password <email-do-usuario> <nova-senha-segura>
+```
+*Exemplo:*
+```bash
+npm --prefix backend run user:password admin@agendaai.com MinhaSenhaForte2026!
+```
+
+> 🔗 **Página Pública de Agendamento do Estabelecimento:**  
+> Cada assinante divulga seu próprio link exclusivo: `/#/agendar/:slug` (ex: `/#/agendar/espaco-belle`).
 
 ---
 
