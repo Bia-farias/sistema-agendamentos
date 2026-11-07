@@ -254,9 +254,12 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2">
                   <Clock size={18} className="text-violet-500" />
                   <span>Agenda de Hoje</span>
-                  <Badge variant="primary" size="sm">
-                    {todayAppointments.length} horários
-                  </Badge>
+                  {todayAppointments.length > 0 && (
+                    <Badge variant="primary" size="sm">
+                      {todayAppointments.length}{' '}
+                      {todayAppointments.length === 1 ? 'horário' : 'horários'}
+                    </Badge>
+                  )}
                 </div>
               }
               subtitle="Atendimentos programados para a data de hoje"
