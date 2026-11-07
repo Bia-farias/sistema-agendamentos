@@ -23,7 +23,9 @@ export class ApiError extends Error {
 }
 
 const TOKEN_KEY = 'agenda_ai_token';
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD ? 'https://sistema-agendamentos-production.up.railway.app/api' : '/api');
 
 export function getAuthToken(): string | null {
   try {
