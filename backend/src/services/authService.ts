@@ -99,8 +99,11 @@ export const authService = {
   },
 
   async login(input: LoginInput) {
+    const cleanEmail = input.email.toLowerCase().trim();
+    const cleanPassword = input.password.trim().replace(/^[`"']|[`"']$/g, '');
+
     const user = await prisma.user.findFirst({
-      where: { email: input.email.toLowerCase() },
+      where: { email: cleanEmail },
       include: { tenant: true },
     });
 
@@ -112,7 +115,10 @@ export const authService = {
       throw new AppError('Esta conta de usuário está inativa. Contate o administrador.', 403);
     }
 
-    const isPasswordValid = await comparePassword(input.password, user.password);
+    let isPasswordValid = await comparePassword(cleanPassword, user.password);
+    if (!isPasswordValid && cleanPassword !== input.password) {
+      isPasswordValid = await comparePassword(input.password, user.password);
+    }
 
     if (!isPasswordValid) {
       throw new AppError('E-mail ou senha incorretos', 401);

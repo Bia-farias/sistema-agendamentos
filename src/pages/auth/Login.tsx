@@ -29,7 +29,9 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      const res = await login(email.trim(), password);
+      const cleanEmail = email.trim();
+      const cleanPassword = password.trim().replace(/^[`"']|[`"']$/g, '');
+      const res = await login(cleanEmail, cleanPassword);
       setIsLoading(false);
 
       if (res.success) {
