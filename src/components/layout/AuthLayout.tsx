@@ -2,6 +2,7 @@ import { Outlet, Link } from 'react-router-dom';
 import { Calendar, Sparkles, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useThemeStore } from '../../stores/themeStore';
 import { Sun, Moon } from 'lucide-react';
+import { ToastContainer } from '../ui/Toast';
 
 export function AuthLayout() {
   const { isDark, toggleTheme } = useThemeStore();
@@ -97,6 +98,7 @@ export function AuthLayout() {
           </a>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 }

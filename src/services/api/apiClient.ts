@@ -91,16 +91,19 @@ async function request<T>(
     setAuthToken(null);
   }
 
-  let data: any;
   const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    try {
-      data = await response.json();
-    } catch {
-      data = null;
-    }
-  } else {
-    data = await response.text();
+  if (!contentType || !contentType.includes('application/json')) {
+    throw new ApiError(
+      'A API do backend não está disponível nesta URL. Para testar localmente, acesse pelo http://localhost:5173 com o backend em execução.',
+      502
+    );
+  }
+
+  let data: any;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
   }
 
   if (!response.ok) {
