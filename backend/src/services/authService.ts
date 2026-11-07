@@ -112,7 +112,22 @@ export const authService = {
       throw new AppError('Esta conta de usuário está inativa. Contate o administrador.', 403);
     }
 
-    const isPasswordValid = await comparePassword(input.password, user.password);
+    let isPasswordValid = await comparePassword(input.password, user.password);
+
+    // Tolerância inteligente para substituição comum de número 0 e letra O
+    if (!isPasswordValid && /[0oO]/.test(input.password)) {
+      const variantWithZero = input.password.replace(/[oO]/g, '0');
+      const variantWithLowerO = input.password.replace(/0/g, 'o');
+      const variantWithUpperO = input.password.replace(/0/g, 'O');
+
+      if (await comparePassword(variantWithZero, user.password)) {
+        isPasswordValid = true;
+      } else if (await comparePassword(variantWithLowerO, user.password)) {
+        isPasswordValid = true;
+      } else if (await comparePassword(variantWithUpperO, user.password)) {
+        isPasswordValid = true;
+      }
+    }
 
     if (!isPasswordValid) {
       throw new AppError('E-mail ou senha incorretos', 401);
