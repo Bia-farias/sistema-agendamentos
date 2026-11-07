@@ -14,16 +14,16 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
 
     return (
-      <div className="w-full space-y-1.5">
+      <div className="w-full min-w-0 space-y-1.5">
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider"
+            className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider truncate"
           >
             {label}
           </label>
         )}
-        <div className="relative flex items-center">
+        <div className="relative flex items-center min-w-0">
           {leftIcon && (
             <div className="absolute left-3.5 text-zinc-400 pointer-events-none flex items-center justify-center">
               {leftIcon}
@@ -33,7 +33,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full rounded-xl bg-zinc-50/80 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 text-sm px-3.5 py-2.5 transition-all duration-150',
+              'w-full min-w-0 max-w-full rounded-xl bg-zinc-50/80 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 text-base sm:text-sm px-3.5 py-2.5 transition-all duration-150',
               'focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 dark:focus:border-violet-400',
               leftIcon && 'pl-10',
               rightIcon && 'pr-10',

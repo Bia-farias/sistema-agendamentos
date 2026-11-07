@@ -7,10 +7,12 @@ import {
   Plus,
 } from 'lucide-react';
 import { useAppointmentStore } from '../../stores/appointmentStore';
+import { useVisualViewport } from '../../hooks/useVisualViewport';
 import { cn } from '../../utils/cn';
 
 export function MobileBottomNav() {
   const { openNewAppointmentDrawer } = useAppointmentStore();
+  const { isKeyboardOpen } = useVisualViewport();
 
   const navItems = [
     { label: 'Início', path: '/dashboard', icon: LayoutDashboard },
@@ -20,7 +22,12 @@ export function MobileBottomNav() {
   ];
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#13101e]/95 backdrop-blur-md border-t border-violet-100/80 dark:border-violet-900/30 px-3 py-2 flex items-center justify-around shadow-[0_-4px_16px_rgba(139,92,246,0.06)]">
+    <div
+      className={cn(
+        'lg:hidden fixed bottom-0 left-0 right-0 w-full max-w-full z-40 bg-white/95 dark:bg-[#13101e]/95 backdrop-blur-md border-t border-violet-100/80 dark:border-violet-900/30 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] flex items-center justify-around shadow-[0_-4px_16px_rgba(139,92,246,0.06)] transition-transform duration-200',
+        isKeyboardOpen && 'translate-y-full pointer-events-none opacity-0'
+      )}
+    >
       {navItems.slice(0, 2).map((item) => {
         const Icon = item.icon;
         return (

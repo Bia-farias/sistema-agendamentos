@@ -1,12 +1,21 @@
 import { useAIChatStore } from '../../stores/aiChatStore';
+import { useVisualViewport } from '../../hooks/useVisualViewport';
 import { Sparkles, X } from 'lucide-react';
+import { cn } from '../../utils/cn';
 
 export function AIFloatingButton() {
-  const { isOpen, openChat, closeChat, messages, hasUnreadMessages } = useAIChatStore();
+  const { isOpen, openChat, closeChat, hasUnreadMessages } = useAIChatStore();
+  const { isKeyboardOpen } = useVisualViewport();
   const unreadCount = hasUnreadMessages ? 1 : 0;
 
   return (
-    <div className="fixed bottom-24 right-5 lg:bottom-8 lg:right-7 z-40">
+    <div
+      className={cn(
+        'fixed bottom-24 right-4 sm:right-5 lg:bottom-8 lg:right-7 z-40 transition-opacity duration-200',
+        isOpen && 'hidden lg:block',
+        !isOpen && isKeyboardOpen && 'opacity-0 pointer-events-none lg:opacity-100 lg:pointer-events-auto'
+      )}
+    >
       {/* Outer glow ring (visible when closed) */}
       {!isOpen && (
         <span className="absolute inset-0 rounded-full bg-violet-500/30 animate-ping" />

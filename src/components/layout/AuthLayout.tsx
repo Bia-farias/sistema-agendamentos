@@ -8,7 +8,7 @@ export function AuthLayout() {
   const { isDark, toggleTheme } = useThemeStore();
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#faf9ff] dark:bg-[#0d0b14] text-zinc-900 dark:text-zinc-100 transition-colors">
+    <div className="min-h-dvh-safe w-full max-w-full overflow-x-hidden flex flex-col lg:flex-row bg-[#faf9ff] dark:bg-[#0d0b14] text-zinc-900 dark:text-zinc-100 transition-colors">
       {/* Left Branding Showcase Panel (Desktop) */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#13101e] p-12 flex-col justify-between border-r border-violet-900/30">
         {/* Background ambient glowing gradients */}
