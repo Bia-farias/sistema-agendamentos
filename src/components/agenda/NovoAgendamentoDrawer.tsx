@@ -19,14 +19,17 @@ import { getTodayDateString } from '../../services/mockData';
 export function NovoAgendamentoDrawer() {
   const { appointments, activeDrawer, closeDrawer, addAppointment } = useAppointmentStore();
   const { customers, addCustomer } = useCustomerStore();
-  const { services } = useServiceStore();
-  const { professionals } = useProfessionalStore();
+  const { services, openNewServiceDrawer } = useServiceStore();
+  const { professionals, openNewProfessionalDrawer } = useProfessionalStore();
   const { depositConfig, addReceivable } = useFinancialStore();
   const { tenant } = useAuthStore();
   const { addToast } = useUIStore();
 
   const isOpen = activeDrawer.type === 'new';
   const prefilled = activeDrawer.prefilledSlot;
+
+  const activeServices = services.filter((s) => s.is_active);
+  const activeProfessionals = professionals.filter((p) => p.is_active);
 
   // Form states
   const [customerId, setCustomerId] = useState('');
@@ -57,12 +60,16 @@ export function NovoAgendamentoDrawer() {
 
       if (prefilled?.time) setStartTime(prefilled.time);
       if (prefilled?.professionalId) setProfessionalId(prefilled.professionalId);
-      else if (professionals.length > 0) setProfessionalId(professionals[0].id);
+      else if (activeProfessionals.length > 0) setProfessionalId(activeProfessionals[0].id);
 
-      if (services.length > 0 && !serviceId) setServiceId(services[0].id);
-      if (customers.length > 0 && !customerId) setCustomerId(customers[0].id);
+      if (activeServices.length > 0 && !serviceId) setServiceId(activeServices[0].id);
+      if (customers.length > 0) {
+        if (!customerId) setCustomerId(customers[0].id);
+        setIsCreatingCustomer(false);
+      } else {
+        setIsCreatingCustomer(true);
+      }
 
-      setIsCreatingCustomer(false);
       setNewCustomerName('');
       setNewCustomerPhone('');
       setNotes('');
@@ -314,18 +321,20 @@ export function NovoAgendamentoDrawer() {
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
               <User size={14} className="text-violet-500" />
-              Cliente
+              {customers.length === 0 ? 'Novo Cliente (1º Cadastro)' : 'Cliente'}
             </span>
-            <button
-              type="button"
-              onClick={() => setIsCreatingCustomer(!isCreatingCustomer)}
-              className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1"
-            >
-              {isCreatingCustomer ? 'Selecionar existente' : '+ Cadastrar novo'}
-            </button>
+            {customers.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsCreatingCustomer(!isCreatingCustomer)}
+                className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1"
+              >
+                {isCreatingCustomer ? 'Selecionar existente' : '+ Cadastrar novo'}
+              </button>
+            )}
           </div>
 
-          {isCreatingCustomer ? (
+          {isCreatingCustomer || customers.length === 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <Input
                 label="Nome do Cliente"
@@ -367,16 +376,33 @@ export function NovoAgendamentoDrawer() {
               </span>
             )}
           </div>
-          <Select
-            value={serviceId}
-            onChange={(e) => setServiceId(e.target.value)}
-            options={services
-              .filter((s) => s.is_active)
-              .map((s) => ({
+          {activeServices.length === 0 ? (
+            <div className="p-3.5 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 flex items-center justify-between gap-3">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                Nenhum serviço ativo cadastrado no catálogo.
+              </span>
+              <Button
+                type="button"
+                size="xs"
+                variant="secondary"
+                onClick={() => {
+                  closeDrawer();
+                  openNewServiceDrawer();
+                }}
+              >
+                Cadastrar primeiro serviço
+              </Button>
+            </div>
+          ) : (
+            <Select
+              value={serviceId}
+              onChange={(e) => setServiceId(e.target.value)}
+              options={activeServices.map((s) => ({
                 value: s.id,
                 label: `${s.name} (${s.duration_minutes}m) — ${formatCurrency(s.price)}`,
               }))}
-          />
+            />
+          )}
         </div>
 
         {/* Professional Selection */}
@@ -385,16 +411,33 @@ export function NovoAgendamentoDrawer() {
             <User size={14} className="text-violet-500" />
             Profissional Responsável
           </label>
-          <Select
-            value={professionalId}
-            onChange={(e) => setProfessionalId(e.target.value)}
-            options={professionals
-              .filter((p) => p.is_active)
-              .map((p) => ({
+          {activeProfessionals.length === 0 ? (
+            <div className="p-3.5 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 flex items-center justify-between gap-3">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                Nenhum profissional ativo cadastrado na equipe.
+              </span>
+              <Button
+                type="button"
+                size="xs"
+                variant="secondary"
+                onClick={() => {
+                  closeDrawer();
+                  openNewProfessionalDrawer();
+                }}
+              >
+                Adicionar profissional
+              </Button>
+            </div>
+          ) : (
+            <Select
+              value={professionalId}
+              onChange={(e) => setProfessionalId(e.target.value)}
+              options={activeProfessionals.map((p) => ({
                 value: p.id,
                 label: `${p.name} — ${p.role}`,
               }))}
-          />
+            />
+          )}
         </div>
 
         {/* Date and Time Grid */}

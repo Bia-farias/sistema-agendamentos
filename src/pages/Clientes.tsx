@@ -189,17 +189,33 @@ export default function Clientes() {
 
       {/* Customer Content Display */}
       {filteredCustomers.length === 0 ? (
-        <EmptyState
-          icon={<Users size={24} />}
-          title="Nenhum cliente encontrado"
-          description={
-            searchQuery
-              ? `Não foram encontrados resultados para "${searchQuery}".`
-              : 'Cadastre seus clientes para gerenciar histórico e preferências.'
-          }
-          actionLabel="+ Cadastrar Cliente"
-          onAction={() => openNewCustomerDrawer()}
-        />
+        customers.length === 0 ? (
+          <EmptyState
+            icon={<Users size={24} />}
+            badge="Base de Clientes"
+            title="Nenhum cliente cadastrado ainda"
+            description="Sua lista de clientes está vazia. Cadastre o primeiro cliente para acompanhar histórico de visitas, preferências e enviar confirmações rápidas pelo WhatsApp."
+            actionLabel="Cadastrar primeiro cliente"
+            onAction={() => openNewCustomerDrawer()}
+          />
+        ) : (
+          <EmptyState
+            icon={<Search size={24} />}
+            title="Nenhum cliente encontrado para este filtro"
+            description={
+              searchQuery
+                ? `Não encontramos clientes correspondentes à busca "${searchQuery}".`
+                : 'Não há clientes enquadrados nesta aba de segmentação no momento.'
+            }
+            actionLabel="Limpar filtros"
+            onAction={() => {
+              setSearchQuery('');
+              setFilterTab('all');
+            }}
+            secondaryActionLabel="+ Novo Cliente"
+            onSecondaryAction={() => openNewCustomerDrawer()}
+          />
+        )
       ) : viewLayout === 'grid' ? (
         /* Grid Cards View */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

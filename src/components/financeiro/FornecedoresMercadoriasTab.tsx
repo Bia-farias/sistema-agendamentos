@@ -5,6 +5,7 @@ import { formatCurrency, formatDate, formatPhone } from '../../utils/format';
 import { createWhatsAppLink } from '../../services/whatsapp';
 import { NovoFornecedorModal } from './NovoFornecedorModal';
 import { NovaMercadoriaModal } from './NovaMercadoriaModal';
+import { EmptyState } from '../ui/EmptyState';
 import {
   Building2,
   Package,
@@ -171,9 +172,25 @@ export function FornecedoresMercadoriasTab() {
 
           {/* Merchandise Items List */}
           {filteredMerchandise.length === 0 ? (
-            <div className="p-8 text-center bg-white dark:bg-[#121215] rounded-2xl border border-violet-100/80 dark:border-zinc-800 text-xs text-zinc-400">
-              Nenhuma mercadoria encontrada.
-            </div>
+            merchandise.length === 0 ? (
+              <EmptyState
+                icon={<Package size={24} />}
+                badge="Controle de Estoque"
+                title="Nenhuma mercadoria cadastrada no estoque"
+                description="Cadastre os produtos e insumos utilizados ou revendidos no seu espaço para controlar quantidades mínimas, custo unitário e valor total em estoque."
+                actionLabel="+ Cadastrar Primeira Mercadoria"
+                onAction={() => setIsMerchandiseModalOpen(true)}
+              />
+            ) : (
+              <EmptyState
+                size="sm"
+                icon={<Search size={20} />}
+                title="Nenhuma mercadoria encontrada para esta busca"
+                description={`Não encontramos produtos correspondentes a "${search}".`}
+                actionLabel="Limpar busca"
+                onAction={() => setSearch('')}
+              />
+            )
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {filteredMerchandise.map((m) => {
@@ -288,9 +305,25 @@ export function FornecedoresMercadoriasTab() {
       {activeSubTab === 'suppliers' && (
         <div className="space-y-4">
           {filteredSuppliers.length === 0 ? (
-            <div className="p-8 text-center bg-white dark:bg-[#121215] rounded-2xl border border-violet-100/80 dark:border-zinc-800 text-xs text-zinc-400">
-              Nenhum fornecedor encontrado.
-            </div>
+            suppliers.length === 0 ? (
+              <EmptyState
+                icon={<Building2 size={24} />}
+                badge="Parceiros & Logística"
+                title="Nenhum fornecedor cadastrado ainda"
+                description="Registre seus fornecedores de produtos, cosméticos e transportadoras parceiras para facilitar cotações e pedidos rápidos via WhatsApp."
+                actionLabel="+ Cadastrar Primeiro Fornecedor"
+                onAction={() => setIsSupplierModalOpen(true)}
+              />
+            ) : (
+              <EmptyState
+                size="sm"
+                icon={<Search size={20} />}
+                title="Nenhum fornecedor encontrado para esta busca"
+                description={`Não encontramos fornecedores correspondentes a "${search}".`}
+                actionLabel="Limpar busca"
+                onAction={() => setSearch('')}
+              />
+            )
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredSuppliers.map((s) => (

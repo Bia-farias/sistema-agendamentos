@@ -81,13 +81,26 @@ export default function Servicos() {
 
       {/* Services Grid */}
       {filteredServices.length === 0 ? (
-        <EmptyState
-          icon={<Scissors size={24} />}
-          title="Nenhum serviço nesta categoria"
-          description="Adicione novos serviços ao catálogo para disponibilizá-los na agenda."
-          actionLabel="+ Cadastrar Serviço"
-          onAction={() => openNewServiceDrawer()}
-        />
+        services.length === 0 ? (
+          <EmptyState
+            icon={<Scissors size={24} />}
+            badge="Catálogo Inicial"
+            title="Seu catálogo de serviços está vazio"
+            description="Cadastre os procedimentos, tempos de duração e valores praticados pelo seu espaço para disponibilizá-los nos agendamentos."
+            actionLabel="Cadastrar primeiro serviço"
+            onAction={() => openNewServiceDrawer()}
+          />
+        ) : (
+          <EmptyState
+            icon={<Scissors size={24} />}
+            title={`Nenhum serviço na categoria "${selectedCategory}"`}
+            description="Você já possui serviços cadastrados em outras categorias, mas ainda não adicionou itens nesta seção."
+            actionLabel="Cadastrar serviço"
+            onAction={() => openNewServiceDrawer()}
+            secondaryActionLabel="Ver todas as categorias"
+            onSecondaryAction={() => setSelectedCategory('all')}
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredServices.map((service) => (

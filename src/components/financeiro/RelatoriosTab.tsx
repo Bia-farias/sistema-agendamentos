@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useFinancialStore } from '../../stores/financialStore';
 import { useCustomerStore } from '../../stores/customerStore';
+import { useServiceStore } from '../../stores/serviceStore';
+import { useProfessionalStore } from '../../stores/professionalStore';
 import { formatCurrency, formatDate } from '../../utils/format';
+import { EmptyState } from '../ui/EmptyState';
 import {
   FileText,
   Printer,
@@ -23,7 +26,9 @@ export function RelatoriosTab() {
     getCommissionSummaries,
     activePeriod,
   } = useFinancialStore();
-  const { customers } = useCustomerStore();
+  const { customers, openNewCustomerDrawer } = useCustomerStore();
+  const { services, openNewServiceDrawer } = useServiceStore();
+  const { professionals, openNewProfessionalDrawer } = useProfessionalStore();
 
   const [reportSection, setReportSection] = useState<'financeiro' | 'servicos' | 'profissionais' | 'clientes'>('financeiro');
 
@@ -286,8 +291,23 @@ export function RelatoriosTab() {
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 font-mono">
                 {servicesRanking.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="py-8 text-center text-xs text-zinc-400 italic font-sans">
-                      Nenhum serviço faturado no período selecionado.
+                    <td colSpan={4} className="py-6 font-sans">
+                      <EmptyState
+                        size="sm"
+                        icon={<Scissors size={18} />}
+                        title={
+                          services.length === 0
+                            ? 'Nenhum serviço cadastrado no sistema'
+                            : 'Nenhum serviço faturado no período'
+                        }
+                        description={
+                          services.length === 0
+                            ? 'Cadastre seus serviços no catálogo para acompanhar volume de atendimentos e ticket médio.'
+                            : 'Realize atendimentos ou altere o período selecionado para visualizar o ranking de serviços.'
+                        }
+                        actionLabel={services.length === 0 ? 'Cadastrar primeiro serviço' : undefined}
+                        onAction={services.length === 0 ? () => openNewServiceDrawer() : undefined}
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -344,8 +364,23 @@ export function RelatoriosTab() {
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 font-mono">
                 {commissionSummaries.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-xs text-zinc-400 italic font-sans">
-                      Nenhum profissional com atendimentos no período selecionado.
+                    <td colSpan={6} className="py-6 font-sans">
+                      <EmptyState
+                        size="sm"
+                        icon={<Users size={18} />}
+                        title={
+                          professionals.length === 0
+                            ? 'Nenhum profissional cadastrado na equipe'
+                            : 'Sem atendimentos registrados no período'
+                        }
+                        description={
+                          professionals.length === 0
+                            ? 'Adicione os membros da equipe para acompanhar produção individual e comissões.'
+                            : 'Os indicadores de cada profissional serão exibidos assim que houver atendimentos.'
+                        }
+                        actionLabel={professionals.length === 0 ? 'Adicionar profissional' : undefined}
+                        onAction={professionals.length === 0 ? () => openNewProfessionalDrawer() : undefined}
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -395,9 +430,14 @@ export function RelatoriosTab() {
 
             <div className="space-y-2.5">
               {topSpenders.length === 0 ? (
-                <p className="text-xs text-zinc-400 italic text-center py-6">
-                  Nenhum cliente com consumo registrado ainda.
-                </p>
+                <EmptyState
+                  size="sm"
+                  icon={<Users size={18} />}
+                  title="Nenhum cliente cadastrado ainda"
+                  description="Cadastre seus clientes para acompanhar o ranking de fidelidade e faturamento acumulado (LTV)."
+                  actionLabel="Cadastrar primeiro cliente"
+                  onAction={() => openNewCustomerDrawer()}
+                />
               ) : (
                 topSpenders.map((c, idx) => (
                   <div

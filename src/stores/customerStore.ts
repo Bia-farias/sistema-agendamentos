@@ -42,9 +42,11 @@ export const useCustomerStore = create<CustomerState>((set, get) => {
       set({ isLoading: true });
       try {
         const data = await customerApiService.getAll(search);
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           set({ customers: data, isLoading: false });
-          localStorage.setItem('agenda_ai_customers', JSON.stringify(data));
+          if (!search) {
+            localStorage.setItem('agenda_ai_customers', JSON.stringify(data));
+          }
         } else {
           set({ isLoading: false });
         }

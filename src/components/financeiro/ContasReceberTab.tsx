@@ -5,6 +5,7 @@ import { formatCurrency, formatDate, formatPhone } from '../../utils/format';
 import { createWhatsAppLink } from '../../services/whatsapp';
 import { Receivable, ReceivableStatus, PaymentMethod } from '../../types/financeiro';
 import { NovaCobrancaModal } from './NovaCobrancaModal';
+import { EmptyState } from '../ui/EmptyState';
 import {
   DollarSign,
   Plus,
@@ -162,15 +163,30 @@ export function ContasReceberTab() {
 
       {/* Receivables List */}
       {filtered.length === 0 ? (
-        <div className="p-8 text-center bg-white dark:bg-[#121215] rounded-2xl border border-violet-100/80 dark:border-zinc-800 space-y-2">
-          <DollarSign size={28} className="mx-auto text-zinc-400 opacity-60" />
-          <h4 className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-            Nenhuma cobrança encontrada
-          </h4>
-          <p className="text-xs text-zinc-400">
-            Tente mudar o filtro de status ou cadastre uma nova cobrança manual.
-          </p>
-        </div>
+        receivables.length === 0 ? (
+          <EmptyState
+            icon={<DollarSign size={24} />}
+            badge="Contas a Receber"
+            title="Nenhuma cobrança registrada ainda"
+            description="As cobranças são geradas automaticamente ao criar novos agendamentos na agenda, ou você pode registrar recebimentos avulsos manualmente."
+            actionLabel="+ Registrar Primeira Cobrança"
+            onAction={() => setIsModalOpen(true)}
+          />
+        ) : (
+          <EmptyState
+            size="sm"
+            icon={<Search size={20} />}
+            title="Nenhuma cobrança encontrada para este filtro"
+            description="Tente limpar a busca ou selecionar outro status de pagamento."
+            actionLabel="Limpar filtros"
+            onAction={() => {
+              setSearch('');
+              setStatusFilter('all');
+            }}
+            secondaryActionLabel="+ Nova Cobrança"
+            onSecondaryAction={() => setIsModalOpen(true)}
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 gap-3">
           {filtered.map((r) => {

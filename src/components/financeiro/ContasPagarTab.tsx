@@ -4,6 +4,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { Payable, PayableCategory, PayableStatus } from '../../types/financeiro';
 import { NovaDespesaModal } from './NovaDespesaModal';
+import { EmptyState } from '../ui/EmptyState';
 import {
   TrendingDown,
   Plus,
@@ -162,15 +163,31 @@ export function ContasPagarTab() {
 
       {/* Payables List */}
       {filtered.length === 0 ? (
-        <div className="p-8 text-center bg-white dark:bg-[#121215] rounded-2xl border border-violet-100/80 dark:border-zinc-800 space-y-2">
-          <TrendingDown size={28} className="mx-auto text-zinc-400 opacity-60" />
-          <h4 className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-            Nenhuma conta a pagar encontrada
-          </h4>
-          <p className="text-xs text-zinc-400">
-            Tente alterar os filtros de categoria e status ou adicione uma nova despesa.
-          </p>
-        </div>
+        payables.length === 0 ? (
+          <EmptyState
+            icon={<TrendingDown size={24} />}
+            badge="Contas a Pagar"
+            title="Nenhuma despesa cadastrada ainda"
+            description="Registre seus custos fixos e variáveis (aluguel, energia, materiais, fornecedores e impostos) para manter o controle de vencimentos e apurar seu lucro real."
+            actionLabel="+ Cadastrar Primeira Despesa"
+            onAction={() => setIsModalOpen(true)}
+          />
+        ) : (
+          <EmptyState
+            size="sm"
+            icon={<Search size={20} />}
+            title="Nenhuma conta a pagar encontrada para este filtro"
+            description="Tente alterar a categoria, o filtro de status ou o termo pesquisado."
+            actionLabel="Limpar filtros"
+            onAction={() => {
+              setSearch('');
+              setStatusFilter('all');
+              setCategoryFilter('all');
+            }}
+            secondaryActionLabel="+ Nova Despesa"
+            onSecondaryAction={() => setIsModalOpen(true)}
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 gap-3">
           {filtered.map((p) => {

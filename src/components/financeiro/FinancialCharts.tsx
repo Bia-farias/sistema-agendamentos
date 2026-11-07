@@ -1,17 +1,27 @@
 import React from 'react';
 import { useFinancialStore } from '../../stores/financialStore';
+import { useServiceStore } from '../../stores/serviceStore';
+import { useProfessionalStore } from '../../stores/professionalStore';
 import { formatCurrency } from '../../utils/format';
+import { EmptyState } from '../ui/EmptyState';
 import {
-  TrendingUp,
   Scissors,
   Users,
   CreditCard,
   BarChart3,
-  PieChart,
+  Wallet,
 } from 'lucide-react';
 
-export function FinancialCharts() {
-  const { receivables, payables, activePeriod } = useFinancialStore();
+interface FinancialChartsProps {
+  onOpenReceivable?: () => void;
+  onOpenPayable?: () => void;
+}
+
+export function FinancialCharts({ onOpenReceivable, onOpenPayable }: FinancialChartsProps) {
+  const { receivables, payables } = useFinancialStore();
+  const { services, openNewServiceDrawer } = useServiceStore();
+  const { professionals, openNewProfessionalDrawer } = useProfessionalStore();
+  const isCompletelyEmpty = receivables.length === 0 && payables.length === 0;
 
   // 1. Receitas x Despesas
   const totalIn = receivables
@@ -92,229 +102,274 @@ export function FinancialCharts() {
   const totalMethodAmount = methodsList.reduce((sum, item) => sum + item[1].total, 0) || 1;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Gráfico 1: Receitas × Despesas */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-violet-100/80 dark:border-zinc-800 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400">
-              <BarChart3 size={16} />
+    <div className="space-y-6">
+      {isCompletelyEmpty && (
+        <EmptyState
+          size="sm"
+          icon={<Wallet size={22} />}
+          badge="Módulo Financeiro"
+          title="Nenhuma movimentação financeira registrada ainda"
+          description="Seus gráficos de receitas, despesas e meios de pagamento serão gerados automaticamente conforme você realizar agendamentos ou lançar cobranças e despesas avulsas."
+          actionLabel={onOpenReceivable ? '+ Registrar Primeiro Recebimento' : undefined}
+          onAction={onOpenReceivable}
+          secondaryActionLabel={onOpenPayable ? '+ Lançar Primeira Despesa' : undefined}
+          onSecondaryAction={onOpenPayable}
+        />
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Gráfico 1: Receitas × Despesas */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-violet-100/80 dark:border-zinc-800 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400">
+                <BarChart3 size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  Receitas × Despesas Liquidadas
+                </h3>
+                <p className="text-[11px] text-zinc-400">Comparativo no período selecionado</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                Receitas × Despesas Liquidadas
-              </h3>
-              <p className="text-[11px] text-zinc-400">Comparativo no período selecionado</p>
+          </div>
+
+          <div className="space-y-4 pt-2">
+            {/* Receitas Bar */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  Receitas Realizadas
+                </span>
+                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                  {formatCurrency(totalIn)}
+                </span>
+              </div>
+              <div className="w-full h-3 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                  style={{ width: `${inPercent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Despesas Bar */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="flex items-center gap-2 text-rose-700 dark:text-rose-400">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                  Despesas Pagas
+                </span>
+                <span className="font-mono text-rose-600 dark:text-rose-400 font-bold">
+                  {formatCurrency(totalOut)}
+                </span>
+              </div>
+              <div className="w-full h-3 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all duration-500"
+                  style={{ width: `${outPercent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Resultado Operacional */}
+            <div className="p-3 rounded-xl bg-violet-50/50 dark:bg-zinc-900/60 border border-violet-100 dark:border-zinc-800 flex items-center justify-between text-xs">
+              <span className="font-medium text-zinc-600 dark:text-zinc-300">
+                Saldo do Período (Lucro):
+              </span>
+              <span
+                className={`font-mono font-extrabold text-sm ${
+                  totalIn >= totalOut ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'
+                }`}
+              >
+                {formatCurrency(totalIn - totalOut)}
+              </span>
             </div>
           </div>
         </div>
 
-        <div className="space-y-4 pt-2">
-          {/* Receitas Bar */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                Receitas Realizadas
-              </span>
-              <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                {formatCurrency(totalIn)}
-              </span>
-            </div>
-            <div className="w-full h-3 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
-                style={{ width: `${inPercent}%` }}
-              />
+        {/* Gráfico 2: Formas de Pagamento */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-violet-100/80 dark:border-zinc-800 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                <CreditCard size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  Distribuição por Forma de Pagamento
+                </h3>
+                <p className="text-[11px] text-zinc-400">Volume recebido em cada canal</p>
+              </div>
             </div>
           </div>
 
-          {/* Despesas Bar */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="flex items-center gap-2 text-rose-700 dark:text-rose-400">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                Despesas Pagas
-              </span>
-              <span className="font-mono text-rose-600 dark:text-rose-400 font-bold">
-                {formatCurrency(totalOut)}
-              </span>
-            </div>
-            <div className="w-full h-3 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all duration-500"
-                style={{ width: `${outPercent}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Resultado Operacional */}
-          <div className="p-3 rounded-xl bg-violet-50/50 dark:bg-zinc-900/60 border border-violet-100 dark:border-zinc-800 flex items-center justify-between text-xs">
-            <span className="font-medium text-zinc-600 dark:text-zinc-300">
-              Saldo do Período (Lucro):
-            </span>
-            <span
-              className={`font-mono font-extrabold text-sm ${
-                totalIn >= totalOut ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'
-              }`}
-            >
-              {formatCurrency(totalIn - totalOut)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Gráfico 2: Formas de Pagamento */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-violet-100/80 dark:border-zinc-800 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-              <CreditCard size={16} />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                Distribuição por Forma de Pagamento
-              </h3>
-              <p className="text-[11px] text-zinc-400">Volume recebido em cada canal</p>
-            </div>
-          </div>
-        </div>
-
-        {methodsList.length === 0 ? (
-          <p className="text-xs text-zinc-400 italic text-center py-6">
-            Nenhum recebimento registrado no período.
-          </p>
-        ) : (
-          <div className="space-y-3 pt-1">
-            {methodsList.map(([key, data]) => {
-              const pct = Math.round((data.total / totalMethodAmount) * 100);
-              return (
-                <div key={key} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${data.color}`} />
-                      {data.name}
-                    </span>
-                    <div className="flex items-center gap-2 font-mono">
-                      <span className="text-zinc-400 font-normal">({pct}%)</span>
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                        {formatCurrency(data.total)}
+          {methodsList.length === 0 ? (
+            <EmptyState
+              size="sm"
+              icon={<CreditCard size={18} />}
+              title="Sem pagamentos liquidados"
+              description="Quando você receber pagamentos via Pix, Cartão ou Dinheiro, a proporção de cada canal aparecerá aqui."
+            />
+          ) : (
+            <div className="space-y-3 pt-1">
+              {methodsList.map(([key, data]) => {
+                const pct = Math.round((data.total / totalMethodAmount) * 100);
+                return (
+                  <div key={key} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${data.color}`} />
+                        {data.name}
                       </span>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-zinc-400 font-normal">({pct}%)</span>
+                        <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                          {formatCurrency(data.total)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${data.color} transition-all duration-500`}
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${data.color} transition-all duration-500`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Gráfico 3: Receitas por Serviço */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-violet-100/80 dark:border-zinc-800 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400">
-              <Scissors size={16} />
+                );
+              })}
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                Top Serviços por Faturamento
-              </h3>
-              <p className="text-[11px] text-zinc-400">Ranking dos serviços mais rentáveis</p>
-            </div>
-          </div>
+          )}
         </div>
 
-        {topServices.length === 0 ? (
-          <p className="text-xs text-zinc-400 italic text-center py-6">
-            Nenhum serviço faturado no período.
-          </p>
-        ) : (
-          <div className="space-y-3 pt-1">
-            {topServices.slice(0, 5).map((srv, idx) => {
-              const pct = Math.round((srv.total / maxServiceTotal) * 100);
-              return (
-                <div key={srv.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-zinc-800 dark:text-zinc-200 truncate flex items-center gap-1.5">
-                      <span className="w-4 h-4 rounded-full bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 text-[10px] flex items-center justify-center font-bold">
-                        {idx + 1}
-                      </span>
-                      {srv.name}
-                    </span>
-                    <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
-                      {formatCurrency(srv.total)}
-                    </span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-violet-600 to-indigo-400 transition-all duration-500"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Gráfico 4: Receitas por Profissional */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-violet-100/80 dark:border-zinc-800 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-sky-100 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400">
-              <Users size={16} />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                Faturamento por Profissional
-              </h3>
-              <p className="text-[11px] text-zinc-400">Produção da equipe no período</p>
+        {/* Gráfico 3: Receitas por Serviço */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-violet-100/80 dark:border-zinc-800 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400">
+                <Scissors size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  Top Serviços por Faturamento
+                </h3>
+                <p className="text-[11px] text-zinc-400">Ranking dos serviços mais rentáveis</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {topProfessionals.length === 0 ? (
-          <p className="text-xs text-zinc-400 italic text-center py-6">
-            Nenhum atendimento registrado no período.
-          </p>
-        ) : (
-          <div className="space-y-3 pt-1">
-            {topProfessionals.map((prof) => {
-              const pct = Math.round((prof.total / maxProfTotal) * 100);
-              return (
-                <div key={prof.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-zinc-800 dark:text-zinc-200">
-                      {prof.name}
-                    </span>
-                    <div className="flex items-center gap-2 font-mono">
-                      <span className="text-[10px] text-zinc-400 font-normal">
-                        ({prof.count} atend.)
+          {topServices.length === 0 ? (
+            <EmptyState
+              size="sm"
+              icon={<Scissors size={18} />}
+              title={
+                services.length === 0
+                  ? 'Nenhum serviço cadastrado no catálogo'
+                  : 'Nenhum serviço faturado no período'
+              }
+              description={
+                services.length === 0
+                  ? 'Cadastre seus serviços para acompanhar quais procedimentos geram mais receita.'
+                  : 'Os serviços realizados e faturados aparecerão classificados aqui.'
+              }
+              actionLabel={services.length === 0 ? 'Cadastrar primeiro serviço' : undefined}
+              onAction={services.length === 0 ? () => openNewServiceDrawer() : undefined}
+            />
+          ) : (
+            <div className="space-y-3 pt-1">
+              {topServices.slice(0, 5).map((srv, idx) => {
+                const pct = Math.round((srv.total / maxServiceTotal) * 100);
+                return (
+                  <div key={srv.name} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-zinc-800 dark:text-zinc-200 truncate flex items-center gap-1.5">
+                        <span className="w-4 h-4 rounded-full bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 text-[10px] flex items-center justify-center font-bold">
+                          {idx + 1}
+                        </span>
+                        {srv.name}
                       </span>
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                        {formatCurrency(prof.total)}
+                      <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
+                        {formatCurrency(srv.total)}
                       </span>
                     </div>
+                    <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-violet-600 to-indigo-400 transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-violet-500 transition-all duration-500"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Gráfico 4: Receitas por Profissional */}
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#121215] border border-violet-100/80 dark:border-zinc-800 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-sky-100 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400">
+                <Users size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  Faturamento por Profissional
+                </h3>
+                <p className="text-[11px] text-zinc-400">Produção da equipe no período</p>
+              </div>
+            </div>
           </div>
-        )}
+
+          {topProfessionals.length === 0 ? (
+            <EmptyState
+              size="sm"
+              icon={<Users size={18} />}
+              title={
+                professionals.length === 0
+                  ? 'Nenhum profissional cadastrado'
+                  : 'Sem atendimentos faturados no período'
+              }
+              description={
+                professionals.length === 0
+                  ? 'Adicione os membros da sua equipe para acompanhar a produção individual.'
+                  : 'O faturamento gerado por cada profissional aparecerá neste comparativo.'
+              }
+              actionLabel={professionals.length === 0 ? 'Adicionar profissional' : undefined}
+              onAction={professionals.length === 0 ? () => openNewProfessionalDrawer() : undefined}
+            />
+          ) : (
+            <div className="space-y-3 pt-1">
+              {topProfessionals.map((prof) => {
+                const pct = Math.round((prof.total / maxProfTotal) * 100);
+                return (
+                  <div key={prof.name} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-zinc-800 dark:text-zinc-200">
+                        {prof.name}
+                      </span>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-[10px] text-zinc-400 font-normal">
+                          ({prof.count} atend.)
+                        </span>
+                        <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                          {formatCurrency(prof.total)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-sky-500 to-violet-500 transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

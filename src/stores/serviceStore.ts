@@ -25,8 +25,12 @@ interface ServiceState {
 }
 
 export const useServiceStore = create<ServiceState>((set, get) => {
+  const DEMO_SERVICE_IDS = new Set(['serv-1', 'serv-2', 'serv-3', 'serv-4']);
   const saved = localStorage.getItem('agenda_ai_services');
-  const initial = saved ? JSON.parse(saved) : initialServices;
+  const parsed: Service[] = saved ? JSON.parse(saved) : initialServices;
+  const initial = Array.isArray(parsed)
+    ? parsed.filter((s) => !DEMO_SERVICE_IDS.has(s.id))
+    : initialServices;
 
   return {
     services: initial,
@@ -38,9 +42,11 @@ export const useServiceStore = create<ServiceState>((set, get) => {
       set({ isLoading: true });
       try {
         const data = await serviceApiService.getAll(category);
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           set({ services: data, isLoading: false });
-          localStorage.setItem('agenda_ai_services', JSON.stringify(data));
+          if (!category) {
+            localStorage.setItem('agenda_ai_services', JSON.stringify(data));
+          }
         } else {
           set({ isLoading: false });
         }

@@ -59,9 +59,10 @@ export default function Profissionais() {
       {professionals.length === 0 ? (
         <EmptyState
           icon={<UserCheck size={24} />}
+          badge="Equipe & Escalas"
           title="Nenhum profissional cadastrado"
-          description="Cadastre os membros da equipe para organizar a escala de horários na agenda."
-          actionLabel="+ Cadastrar Membro"
+          description="Adicione os profissionais que realizam atendimentos no seu espaço para configurar horários de expediente, especialidades e comissões automáticas."
+          actionLabel="Adicionar profissional"
           onAction={() => openNewProfessionalDrawer()}
         />
       ) : (

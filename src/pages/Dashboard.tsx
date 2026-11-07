@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   Calendar,
   Users,
@@ -7,26 +8,84 @@ import {
   Plus,
   ArrowRight,
   Sparkles,
-  Phone,
   CheckCircle2,
   Scissors,
   MessageCircle,
+  UserCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useAppointmentStore } from '../stores/appointmentStore';
 import { useCustomerStore } from '../stores/customerStore';
 import { useServiceStore } from '../stores/serviceStore';
+import { useProfessionalStore } from '../stores/professionalStore';
 import { useUIStore } from '../stores/uiStore';
 import { StatsCard } from '../components/ui/StatsCard';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { Avatar } from '../components/ui/Avatar';
 import { EmptyState } from '../components/ui/EmptyState';
-import { formatCurrency, formatDate, formatPhone } from '../utils/format';
+import { formatCurrency } from '../utils/format';
 import { openWhatsAppForAppointment } from '../services/whatsapp';
 import { AppointmentStatus } from '../types';
 import { useNavigate } from 'react-router-dom';
+
+function TodayAgendaIllustration() {
+  return (
+    <svg
+      width="96"
+      height="80"
+      viewBox="0 0 96 80"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="mx-auto select-none"
+      aria-hidden="true"
+    >
+      {/* Subtle background glow */}
+      <circle cx="48" cy="42" r="34" className="fill-violet-500/8 dark:fill-violet-500/12" />
+      {/* Calendar body */}
+      <rect
+        x="18"
+        y="16"
+        width="54"
+        height="48"
+        rx="10"
+        className="fill-white dark:fill-zinc-900 stroke-violet-200 dark:stroke-violet-500/30"
+        strokeWidth="1.75"
+      />
+      {/* Calendar top bar */}
+      <path
+        d="M18 26C18 20.4772 22.4772 16 28 16H62C67.5228 16 72 20.4772 72 26V29H18V26Z"
+        className="fill-violet-100/90 dark:fill-violet-500/20"
+      />
+      {/* Calendar rings */}
+      <rect x="30" y="11" width="3.5" height="9" rx="1.75" className="fill-violet-500 dark:fill-violet-400" />
+      <rect x="56.5" y="11" width="3.5" height="9" rx="1.75" className="fill-violet-500 dark:fill-violet-400" />
+      {/* Calendar slot lines */}
+      <rect x="26" y="36" width="22" height="4" rx="2" className="fill-violet-200/90 dark:fill-zinc-700" />
+      <rect x="26" y="44" width="32" height="4" rx="2" className="fill-zinc-200/90 dark:fill-zinc-800" />
+      <rect x="26" y="52" width="16" height="4" rx="2" className="fill-zinc-200/80 dark:fill-zinc-800" />
+      {/* Floating clock/plus badge */}
+      <circle
+        cx="68"
+        cy="56"
+        r="13"
+        className="fill-violet-600 dark:fill-violet-500 stroke-white dark:stroke-zinc-900"
+        strokeWidth="2.5"
+      />
+      <path
+        d="M68 51V61M63 56H73"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      {/* Decorative sparkle */}
+      <path
+        d="M79 18L80.2 21.3L83.5 22.5L80.2 23.7L79 27L77.8 23.7L74.5 22.5L77.8 21.3L79 18Z"
+        className="fill-violet-400/80 dark:fill-violet-400/60"
+      />
+    </svg>
+  );
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -34,16 +93,27 @@ export default function Dashboard() {
   const { addToast } = useUIStore();
   const {
     appointments,
+    fetchAppointments,
     getKPIs,
     getTodayAppointments,
     openNewAppointmentDrawer,
     openDetailDrawer,
   } = useAppointmentStore();
-  const { customers, openNewCustomerDrawer } = useCustomerStore();
-  const { services } = useServiceStore();
+  const { customers, fetchCustomers, openNewCustomerDrawer } = useCustomerStore();
+  const { services, fetchServices, openNewServiceDrawer } = useServiceStore();
+  const { professionals, fetchProfessionals, openNewProfessionalDrawer } = useProfessionalStore();
+
+  useEffect(() => {
+    fetchAppointments();
+    fetchCustomers();
+    fetchServices();
+    fetchProfessionals();
+  }, [fetchAppointments, fetchCustomers, fetchServices, fetchProfessionals]);
 
   const kpis = getKPIs();
   const todayAppointments = getTodayAppointments();
+  const isSystemUnconfigured = services.length === 0 || professionals.length === 0;
+  const hasAnyAppointments = appointments.length > 0;
 
   const statusVariants: Record<AppointmentStatus, 'warning' | 'success' | 'info' | 'danger'> = {
     pending: 'warning',
@@ -82,6 +152,7 @@ export default function Dashboard() {
     };
   });
 
+  const totalWeeklyRevenue = weeklyData.reduce((acc, curr) => acc + curr.revenue, 0);
   const maxRevenue = Math.max(...weeklyData.map((d) => d.revenue), 1);
 
   return (
@@ -123,7 +194,13 @@ export default function Dashboard() {
         <StatsCard
           title="Faturamento de Hoje"
           value={formatCurrency(kpis.todayRevenue)}
-          trend={{ value: kpis.weeklyRevenueChange, isPositive: true }}
+          subtitle={
+            kpis.todayRevenue > 0
+              ? 'Receita prevista para hoje'
+              : hasAnyAppointments
+              ? 'Sem receita registrada hoje'
+              : 'Aguardando 1º agendamento'
+          }
           icon={<DollarSign size={22} />}
           color="emerald"
         />
@@ -131,15 +208,25 @@ export default function Dashboard() {
         <StatsCard
           title="Agendamentos Hoje"
           value={kpis.todayAppointmentsCount}
-          subtitle={`${kpis.todayCompletedCount} concluídos • ${kpis.todayPendingCount} pendentes`}
+          subtitle={
+            kpis.todayAppointmentsCount > 0
+              ? `${kpis.todayCompletedCount} concluídos • ${kpis.todayPendingCount} pendentes`
+              : hasAnyAppointments
+              ? 'Agenda livre nesta data'
+              : 'Nenhum horário marcado ainda'
+          }
           icon={<Calendar size={22} />}
           color="violet"
         />
 
         <StatsCard
-          title="Novos Clientes (Mês)"
-          value={kpis.newCustomersThisMonth}
-          trend={{ value: 12, isPositive: true, label: 'vs. mês passado' }}
+          title="Clientes Cadastrados"
+          value={customers.length}
+          subtitle={
+            customers.length === 0
+              ? 'Cadastre seu primeiro cliente'
+              : `${customers.filter((c) => c.is_vip).length} clientes VIP na base`
+          }
           icon={<Users size={22} />}
           color="sky"
         />
@@ -147,7 +234,11 @@ export default function Dashboard() {
         <StatsCard
           title="Taxa de Ocupação"
           value={`${kpis.occupancyRate}%`}
-          subtitle="Capacidade das salas/cadeiras"
+          subtitle={
+            professionals.length === 0
+              ? 'Adicione profissionais à equipe'
+              : 'Capacidade das salas/cadeiras'
+          }
           icon={<TrendingUp size={22} />}
           color="violet"
         />
@@ -182,13 +273,97 @@ export default function Dashboard() {
             />
 
             {todayAppointments.length === 0 ? (
-              <EmptyState
-                icon={<Calendar size={24} />}
-                title="Nenhum atendimento para hoje"
-                description="Os horários agendados para hoje aparecerão aqui em ordem cronológica."
-                actionLabel="+ Criar Agendamento"
-                onAction={() => openNewAppointmentDrawer()}
-              />
+              isSystemUnconfigured ? (
+                <EmptyState
+                  illustration={<TodayAgendaIllustration />}
+                  badge="Configuração Inicial"
+                  title="Prepare seu espaço para o primeiro agendamento"
+                  description="Sua conta está recém-criada! Antes de agendar o primeiro horário, cadastre seus serviços e os profissionais que realizarão os atendimentos."
+                  actionLabel={services.length === 0 ? 'Cadastrar primeiro serviço' : 'Adicionar profissional'}
+                  onAction={() =>
+                    services.length === 0 ? openNewServiceDrawer() : openNewProfessionalDrawer()
+                  }
+                  secondaryActionLabel={
+                    services.length === 0 && professionals.length === 0
+                      ? 'Adicionar profissional'
+                      : 'Criar agendamento'
+                  }
+                  onSecondaryAction={() =>
+                    services.length === 0 && professionals.length === 0
+                      ? openNewProfessionalDrawer()
+                      : openNewAppointmentDrawer()
+                  }
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-left mt-1">
+                    <button
+                      type="button"
+                      onClick={() => openNewServiceDrawer()}
+                      className={`p-3 rounded-xl border text-xs flex items-center justify-between transition-all cursor-pointer ${
+                        services.length > 0
+                          ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-white dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-500/40 text-zinc-700 dark:text-zinc-200'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 font-semibold">
+                        <Scissors size={14} className={services.length > 0 ? 'text-emerald-500' : 'text-violet-500'} />
+                        1. Catálogo de Serviços
+                      </span>
+                      <span className="text-[11px] font-bold">
+                        {services.length > 0 ? `${services.length} ok` : 'Pendente'}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openNewProfessionalDrawer()}
+                      className={`p-3 rounded-xl border text-xs flex items-center justify-between transition-all cursor-pointer ${
+                        professionals.length > 0
+                          ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-white dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-500/40 text-zinc-700 dark:text-zinc-200'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 font-semibold">
+                        <UserCheck size={14} className={professionals.length > 0 ? 'text-emerald-500' : 'text-violet-500'} />
+                        2. Equipe / Profissionais
+                      </span>
+                      <span className="text-[11px] font-bold">
+                        {professionals.length > 0 ? `${professionals.length} ok` : 'Pendente'}
+                      </span>
+                    </button>
+                  </div>
+                </EmptyState>
+              ) : !hasAnyAppointments ? (
+                <EmptyState
+                  illustration={<TodayAgendaIllustration />}
+                  badge="Tudo Pronto"
+                  title="Realize o seu primeiro agendamento"
+                  description="Seu catálogo e sua equipe já estão configurados! Clique no botão abaixo para selecionar o cliente, o serviço e o horário do seu primeiro atendimento."
+                  actionLabel="+ Realizar Primeiro Agendamento"
+                  onAction={() => openNewAppointmentDrawer()}
+                  secondaryActionLabel="Abrir Agenda Completa"
+                  onSecondaryAction={() => navigate('/agenda')}
+                >
+                  <div className="p-3 rounded-xl bg-violet-50/60 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-800/40 text-[11px] text-violet-700 dark:text-violet-300 flex items-center justify-center gap-2">
+                    <Sparkles size={14} className="shrink-0 text-violet-500" />
+                    <span>
+                      Dica: Você pode cadastrar o cliente na hora, direto na janela de agendamento.
+                    </span>
+                  </div>
+                </EmptyState>
+              ) : (
+                <EmptyState
+                  illustration={<TodayAgendaIllustration />}
+                  badge="Agenda do Dia Livre"
+                  title="Nenhum atendimento programado para hoje"
+                  description={`Você não possui horários marcados para a data de hoje, mas já conta com ${appointments.length} ${
+                    appointments.length === 1 ? 'agendamento registrado' : 'agendamentos registrados'
+                  } em outros dias.`}
+                  actionLabel="+ Agendar para Hoje"
+                  onAction={() => openNewAppointmentDrawer()}
+                  secondaryActionLabel="Ver Outras Datas"
+                  onSecondaryAction={() => navigate('/agenda')}
+                />
+              )
             ) : (
               <div className="space-y-3">
                 {todayAppointments.map((apt) => (
@@ -277,47 +452,66 @@ export default function Dashboard() {
               subtitle="Desempenho dos últimos 7 dias"
             />
 
-            <div className="pt-2">
-              <div className="h-44 flex items-end justify-between gap-2 pt-6 pb-2 px-1">
-                {weeklyData.map((item, idx) => {
-                  const heightPercent = Math.round((item.revenue / maxRevenue) * 100);
-                  const isHighest = item.revenue === maxRevenue;
+            {totalWeeklyRevenue === 0 ? (
+              <EmptyState
+                size="sm"
+                icon={<TrendingUp size={20} />}
+                title="Sem movimentação nos últimos 7 dias"
+                description="O gráfico semanal será preenchido automaticamente conforme seus agendamentos forem realizados."
+                actionLabel={
+                  services.length === 0
+                    ? 'Cadastrar primeiro serviço'
+                    : '+ Novo Agendamento'
+                }
+                onAction={() =>
+                  services.length === 0
+                    ? openNewServiceDrawer()
+                    : openNewAppointmentDrawer()
+                }
+              />
+            ) : (
+              <div className="pt-2">
+                <div className="h-44 flex items-end justify-between gap-2 pt-6 pb-2 px-1">
+                  {weeklyData.map((item, idx) => {
+                    const heightPercent = Math.round((item.revenue / maxRevenue) * 100);
+                    const isHighest = item.revenue === maxRevenue && item.revenue > 0;
 
-                  return (
-                    <div
-                      key={idx}
-                      className="flex-1 flex flex-col items-center gap-2 group relative"
-                    >
-                      {/* Tooltip on hover */}
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-zinc-900 text-white text-[10px] py-1 px-2 rounded-md pointer-events-none whitespace-nowrap z-10 font-mono">
-                        {formatCurrency(item.revenue)} ({item.appointments} atendimentos)
+                    return (
+                      <div
+                        key={idx}
+                        className="flex-1 flex flex-col items-center gap-2 group relative"
+                      >
+                        {/* Tooltip on hover */}
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-zinc-900 text-white text-[10px] py-1 px-2 rounded-md pointer-events-none whitespace-nowrap z-10 font-mono">
+                          {formatCurrency(item.revenue)} ({item.appointments} atendimentos)
+                        </div>
+
+                        <div className="w-full h-32 flex items-end justify-center">
+                          <div
+                            style={{ height: `${Math.max(heightPercent, 12)}%` }}
+                            className={`w-full max-w-[28px] rounded-xl transition-all duration-300 ${
+                              isHighest
+                                ? 'bg-gradient-to-t from-violet-500 to-purple-400 shadow-md shadow-violet-400/25'
+                                : 'bg-violet-100/70 dark:bg-zinc-800 group-hover:bg-violet-300 dark:group-hover:bg-violet-500/60'
+                            }`}
+                          />
+                        </div>
+                        <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                          {item.day}
+                        </span>
                       </div>
+                    );
+                  })}
+                </div>
 
-                      <div className="w-full h-32 flex items-end justify-center">
-                        <div
-                          style={{ height: `${Math.max(heightPercent, 12)}%` }}
-                          className={`w-full max-w-[28px] rounded-xl transition-all duration-300 ${
-                            isHighest
-                              ? 'bg-gradient-to-t from-violet-500 to-purple-400 shadow-md shadow-violet-400/25'
-                              : 'bg-violet-100/70 dark:bg-zinc-800 group-hover:bg-violet-300 dark:group-hover:bg-violet-500/60'
-                          }`}
-                        />
-                      </div>
-                      <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-                        {item.day}
-                      </span>
-                    </div>
-                  );
-                })}
+                <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                  <span>Total da Semana:</span>
+                  <strong className="text-sm text-zinc-900 dark:text-zinc-100 font-extrabold">
+                    {formatCurrency(totalWeeklyRevenue)}
+                  </strong>
+                </div>
               </div>
-
-              <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                <span>Total da Semana:</span>
-                <strong className="text-sm text-zinc-900 dark:text-zinc-100 font-extrabold">
-                  {formatCurrency(weeklyData.reduce((acc, curr) => acc + curr.revenue, 0))}
-                </strong>
-              </div>
-            </div>
+            )}
           </Card>
 
           {/* Top Services Popularity */}
@@ -342,11 +536,14 @@ export default function Dashboard() {
             />
 
             {services.length === 0 ? (
-              <div className="text-center py-8 px-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-400">
-                <Scissors size={28} className="mx-auto mb-2 opacity-30 text-violet-500" />
-                <p className="font-semibold text-xs text-zinc-600 dark:text-zinc-300">Nenhum serviço cadastrado ainda</p>
-                <p className="text-[11px] text-zinc-400 mt-0.5">Cadastre seus serviços para acompanhar o desempenho</p>
-              </div>
+              <EmptyState
+                size="sm"
+                icon={<Scissors size={20} />}
+                title="Seu catálogo de serviços está vazio"
+                description="Cadastre os serviços oferecidos pelo seu espaço para liberar agendamentos e acompanhar os mais pedidos."
+                actionLabel="Cadastrar primeiro serviço"
+                onAction={() => openNewServiceDrawer()}
+              />
             ) : (
               <div className="space-y-3">
                 {services.slice(0, 4).map((service, idx) => (

@@ -54,9 +54,11 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => {
       set({ isLoading: true });
       try {
         const data = await appointmentApiService.getAll(params);
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           set({ appointments: data, isLoading: false });
-          localStorage.setItem('agenda_ai_appointments', JSON.stringify(data));
+          if (!params) {
+            localStorage.setItem('agenda_ai_appointments', JSON.stringify(data));
+          }
         } else {
           set({ isLoading: false });
         }

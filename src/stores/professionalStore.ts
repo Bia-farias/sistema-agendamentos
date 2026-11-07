@@ -23,8 +23,12 @@ interface ProfessionalState {
 }
 
 export const useProfessionalStore = create<ProfessionalState>((set, get) => {
+  const DEMO_PROFESSIONAL_IDS = new Set(['pro-1', 'pro-2']);
   const saved = localStorage.getItem('agenda_ai_professionals');
-  const initial = saved ? JSON.parse(saved) : initialProfessionals;
+  const parsed: Professional[] = saved ? JSON.parse(saved) : initialProfessionals;
+  const initial = Array.isArray(parsed)
+    ? parsed.filter((p) => !DEMO_PROFESSIONAL_IDS.has(p.id))
+    : initialProfessionals;
 
   return {
     professionals: initial,
@@ -35,9 +39,11 @@ export const useProfessionalStore = create<ProfessionalState>((set, get) => {
       set({ isLoading: true });
       try {
         const data = await professionalApiService.getAll(isActive);
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           set({ professionals: data, isLoading: false });
-          localStorage.setItem('agenda_ai_professionals', JSON.stringify(data));
+          if (isActive === undefined) {
+            localStorage.setItem('agenda_ai_professionals', JSON.stringify(data));
+          }
         } else {
           set({ isLoading: false });
         }

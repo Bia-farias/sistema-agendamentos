@@ -5,6 +5,7 @@ import { useProfessionalStore } from '../../stores/professionalStore';
 import { useUIStore } from '../../stores/uiStore';
 import { formatCurrency } from '../../utils/format';
 import { createWhatsAppLink } from '../../services/whatsapp';
+import { EmptyState } from '../ui/EmptyState';
 import {
   Scissors,
   CheckCircle2,
@@ -20,7 +21,7 @@ import {
 export function ComissoesTab() {
   const { getCommissionSummaries, payCommission } = useFinancialStore();
   const { tenant } = useAuthStore();
-  const { professionals } = useProfessionalStore();
+  const { professionals, openNewProfessionalDrawer } = useProfessionalStore();
   const { addToast } = useUIStore();
 
   const summaries = getCommissionSummaries();
@@ -133,15 +134,14 @@ export function ComissoesTab() {
         </div>
 
         {summaries.length === 0 ? (
-          <div className="p-8 text-center bg-white dark:bg-[#121215] rounded-2xl border border-violet-100/80 dark:border-zinc-800 space-y-2">
-            <Users size={28} className="mx-auto text-zinc-400 opacity-60" />
-            <h4 className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
-              Nenhum profissional encontrado
-            </h4>
-            <p className="text-xs text-zinc-400">
-              Cadastre sua equipe na aba Equipe e lance atendimentos para acompanhar as comissões.
-            </p>
-          </div>
+          <EmptyState
+            icon={<Users size={24} />}
+            badge="Comissionamento da Equipe"
+            title="Nenhum profissional cadastrado para apuração"
+            description="Adicione os profissionais da sua equipe e defina o percentual de comissão de cada um para acompanhar automaticamente os valores gerados e pagos."
+            actionLabel="Adicionar profissional"
+            onAction={() => openNewProfessionalDrawer()}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {summaries.map((s) => (

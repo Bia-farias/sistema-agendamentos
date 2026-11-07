@@ -2,21 +2,19 @@ import React, { useState } from 'react';
 import { useFinancialStore } from '../../stores/financialStore';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { FinancialPeriod } from '../../types/financeiro';
+import { EmptyState } from '../ui/EmptyState';
 import {
   Wallet,
   ArrowUpRight,
   ArrowDownLeft,
-  Calendar,
-  Filter,
-  DollarSign,
-  TrendingUp,
 } from 'lucide-react';
 
 export function FluxoCaixaTab() {
-  const { getCashFlowEntries, activePeriod, setActivePeriod } = useFinancialStore();
+  const { getCashFlowEntries, activePeriod, setActivePeriod, receivables, payables } = useFinancialStore();
   const [selectedPeriod, setSelectedPeriod] = useState<FinancialPeriod>(activePeriod);
 
   const entries = getCashFlowEntries(selectedPeriod);
+  const allEntries = getCashFlowEntries('all');
 
   const totalIn = entries
     .filter((e) => e.type === 'income')
@@ -148,8 +146,36 @@ export function FluxoCaixaTab() {
         </div>
 
         {entries.length === 0 ? (
-          <div className="p-8 text-center text-zinc-400 text-xs italic">
-            Nenhuma movimentação financeira encontrada para este período.
+          <div className="p-5">
+            <EmptyState
+              size="sm"
+              icon={<Wallet size={20} />}
+              title={
+                allEntries.length === 0
+                  ? 'Nenhuma movimentação realizada no caixa'
+                  : 'Nenhuma movimentação neste período'
+              }
+              description={
+                allEntries.length === 0
+                  ? receivables.length > 0 || payables.length > 0
+                    ? 'Você possui lançamentos pendentes, mas o Fluxo de Caixa exibe apenas entradas recebidas e despesas já pagas.'
+                    : 'Conforme você receber pagamentos de clientes e quitar despesas, o extrato consolidado aparecerá aqui.'
+                  : 'Não houve entradas ou saídas liquidadas no filtro de data selecionado.'
+              }
+              actionLabel={
+                allEntries.length > 0 && selectedPeriod !== 'all'
+                  ? 'Ver Todo o Período'
+                  : undefined
+              }
+              onAction={
+                allEntries.length > 0 && selectedPeriod !== 'all'
+                  ? () => {
+                      setSelectedPeriod('all');
+                      setActivePeriod('all');
+                    }
+                  : undefined
+              }
+            />
           </div>
         ) : (
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 max-h-[500px] overflow-y-auto">

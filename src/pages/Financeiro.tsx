@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useFinancialStore } from '../stores/financialStore';
+import { useServiceStore } from '../stores/serviceStore';
+import { useProfessionalStore } from '../stores/professionalStore';
+import { useCustomerStore } from '../stores/customerStore';
 import { useUIStore } from '../stores/uiStore';
 import { FinancialPeriod } from '../types/financeiro';
 import { FinancialAlerts } from '../components/financeiro/FinancialAlerts';
@@ -30,12 +33,18 @@ import {
 
 export default function Financeiro() {
   const { activePeriod, setActivePeriod, clearAllFinancialData, fetchFinancialData } = useFinancialStore();
+  const { fetchServices } = useServiceStore();
+  const { fetchProfessionals } = useProfessionalStore();
+  const { fetchCustomers } = useCustomerStore();
   const { addToast } = useUIStore();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
 
   useEffect(() => {
     fetchFinancialData();
-  }, [fetchFinancialData]);
+    fetchServices();
+    fetchProfessionals();
+    fetchCustomers();
+  }, [fetchFinancialData, fetchServices, fetchProfessionals, fetchCustomers]);
 
   const [isReceivableModalOpen, setIsReceivableModalOpen] = useState(false);
   const [isPayableModalOpen, setIsPayableModalOpen] = useState(false);
@@ -152,7 +161,10 @@ export default function Financeiro() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             <FinancialKPIsGrid />
-            <FinancialCharts />
+            <FinancialCharts
+              onOpenReceivable={() => setIsReceivableModalOpen(true)}
+              onOpenPayable={() => setIsPayableModalOpen(true)}
+            />
           </div>
         )}
 
