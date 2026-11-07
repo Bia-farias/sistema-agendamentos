@@ -33,6 +33,13 @@ interface BackendAuthResponse {
   token: string;
 }
 
+function safeIsoDate(val?: string | Date | null): string {
+  if (!val) return new Date().toISOString();
+  if (typeof val === 'string') return val;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+}
+
 function mapBackendAuthData(data: { user: BackendAuthResponse['user']; tenant: BackendAuthResponse['tenant'] }): {
   profile: Profile;
   tenant: Tenant;
@@ -47,7 +54,7 @@ function mapBackendAuthData(data: { user: BackendAuthResponse['user']; tenant: B
     phone: data.user.phone || undefined,
     avatar_url: data.user.avatarUrl || undefined,
     is_active: true,
-    created_at: typeof data.user.createdAt === 'string' ? data.user.createdAt : new Date(data.user.createdAt).toISOString(),
+    created_at: safeIsoDate(data.user.createdAt),
   };
 
   const tenant: Tenant = {
@@ -66,7 +73,7 @@ function mapBackendAuthData(data: { user: BackendAuthResponse['user']; tenant: B
       interval_minutes: 30,
       allow_online_booking: true,
     },
-    created_at: typeof data.tenant.createdAt === 'string' ? data.tenant.createdAt : new Date(data.tenant.createdAt).toISOString(),
+    created_at: safeIsoDate(data.tenant.createdAt),
   };
 
   return { profile, tenant };
@@ -163,7 +170,7 @@ export const authApiService = {
 export function translateAuthError(message: string): string {
   if (!message) return 'Ocorreu um erro na autenticação.';
   const lower = message.toLowerCase();
-  if (lower.includes('invalid') || lower.includes('incorreto') || lower.includes('incorretos') || lower.includes('401')) {
+  if (lower.includes('invalid login') || lower.includes('invalid credentials') || lower.includes('incorreto') || lower.includes('incorretos') || lower.includes('401')) {
     return 'E-mail ou senha incorretos.';
   }
   if (lower.includes('já está cadastrado') || lower.includes('already exists') || lower.includes('409')) {

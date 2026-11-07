@@ -93,6 +93,7 @@ export const authService = {
           interval_minutes: result.tenant.intervalMinutes,
           allow_online_booking: result.tenant.allowOnlineBooking,
         },
+        createdAt: result.tenant.createdAt,
       },
       token,
     };
@@ -158,6 +159,7 @@ export const authService = {
           interval_minutes: user.tenant.intervalMinutes,
           allow_online_booking: user.tenant.allowOnlineBooking,
         },
+        createdAt: user.tenant.createdAt,
       },
       token,
     };
@@ -200,6 +202,7 @@ export const authService = {
           interval_minutes: user.tenant.intervalMinutes,
           allow_online_booking: user.tenant.allowOnlineBooking,
         },
+        createdAt: user.tenant.createdAt,
       },
     };
   },
