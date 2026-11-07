@@ -61,17 +61,29 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
   let response: Response;
   try {
     response = await fetch(url, {
       ...options,
       headers,
+      signal: controller.signal,
     });
   } catch (err: any) {
+    if (err?.name === 'AbortError') {
+      throw new ApiError(
+        'Tempo limite esgotado. O servidor backend não respondeu na porta 3001.',
+        0
+      );
+    }
     throw new ApiError(
-      'Não foi possível conectar ao servidor do Agenda AI. Verifique se o backend está em execução.',
+      'Não foi possível conectar ao servidor do Agenda AI (porta 3001). Certifique-se de que o terminal do backend está rodando.',
       0
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   // Tratamento de 401 Unauthorized (sessão expirada)

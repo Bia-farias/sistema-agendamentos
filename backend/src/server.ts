@@ -20,7 +20,7 @@ async function bootstrap() {
     console.warn('👉 Verifique a DATABASE_URL no arquivo backend/.env');
   }
 
-  const server = app.listen(PORT, () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🎉 Servidor rodando em: http://localhost:${PORT}`);
     console.log(`👉 Health check:        http://localhost:${PORT}/api/health`);
     console.log(`👉 Autenticação:        http://localhost:${PORT}/api/auth/register`);
