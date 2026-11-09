@@ -24,11 +24,10 @@ export function AIFloatingButton() {
       <button
         onClick={() => (isOpen ? closeChat() : openChat())}
         title={isOpen ? 'Fechar Assistente IA' : 'Abrir Assistente IA'}
-        className={`relative w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 select-none ${
-          isOpen
-            ? 'bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 rotate-0 scale-95'
-            : 'bg-gradient-to-tr from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 hover:scale-110 shadow-violet-600/50 rotate-0'
-        }`}
+        className={`relative w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 select-none ${isOpen
+          ? 'bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 rotate-0 scale-95'
+          : 'bg-gradient-to-tr from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 hover:scale-110 shadow-violet-600/50 rotate-0'
+          }`}
       >
         {isOpen ? (
           <X size={20} className="text-zinc-300" />
