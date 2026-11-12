@@ -58,7 +58,7 @@ export default function Servicos() {
           leftIcon={<Plus size={16} />}
           className="shadow-sm shadow-violet-400/20"
         >
-          + Novo Serviço
+          Novo Serviço
         </Button>
       </div>
 

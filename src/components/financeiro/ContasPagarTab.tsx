@@ -156,7 +156,7 @@ export function ContasPagarTab() {
             className="ml-auto sm:ml-2 px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-rose-500/20 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
           >
             <Plus size={15} />
-            + Nova Despesa
+            Nova Despesa
           </button>
         </div>
       </div>

@@ -156,7 +156,7 @@ export function ContasReceberTab() {
             className="ml-auto sm:ml-2 px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-violet-500/20 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
           >
             <Plus size={15} />
-            + Nova Cobrança
+            Nova Cobrança
           </button>
         </div>
       </div>

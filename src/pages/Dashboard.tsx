@@ -191,7 +191,7 @@ export default function Dashboard() {
             onClick={() => openNewCustomerDrawer()}
             leftIcon={<Users size={15} />}
           >
-            + Novo Cliente
+            Novo Cliente
           </Button>
           <Button
             variant="primary"
@@ -200,7 +200,7 @@ export default function Dashboard() {
             leftIcon={<Plus size={16} />}
             className="shadow-sm shadow-violet-400/20"
           >
-            + Novo Agendamento
+            Novo Agendamento
           </Button>
         </div>
       </div>
