@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Bell,
   Sun,
@@ -23,6 +23,34 @@ export function Header() {
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
+  const quickMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isQuickMenuOpen) return;
+
+    const handleOutsideInteraction = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (quickMenuRef.current && target && !quickMenuRef.current.contains(target)) {
+        setIsQuickMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsQuickMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideInteraction);
+    document.addEventListener('touchstart', handleOutsideInteraction, { passive: true });
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideInteraction);
+      document.removeEventListener('touchstart', handleOutsideInteraction);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isQuickMenuOpen]);
 
   const notifications = [
     {
@@ -50,7 +78,7 @@ export function Header() {
 
   return (
     <>
-      <header className="h-16 border-b border-violet-100/70 dark:border-violet-900/20 bg-white/90 dark:bg-[#13101e]/90 backdrop-blur-md px-4 lg:px-6 flex items-center justify-between sticky top-0 z-20 shadow-[0_1px_12px_rgba(139,92,246,0.04)]">
+      <header className="h-16 border-b border-violet-100/70 dark:border-violet-900/20 bg-white/90 dark:bg-[#13101e]/90 backdrop-blur-md px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30 shadow-[0_1px_12px_rgba(139,92,246,0.04)]">
         {/* Left Side: Mobile Logo & Global Search */}
         <div className="flex items-center gap-3">
           <div className="flex lg:hidden items-center gap-2">
@@ -105,9 +133,15 @@ export function Header() {
           </button>
 
           {/* User Avatar Menu Trigger */}
-          <div className="relative pl-2 border-l border-violet-100/80 dark:border-violet-800/30">
+          <div
+            ref={quickMenuRef}
+            className="relative pl-2 border-l border-violet-100/80 dark:border-violet-800/30"
+          >
             <button
-              onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)}
+              type="button"
+              onClick={() => setIsQuickMenuOpen((prev) => !prev)}
+              aria-expanded={isQuickMenuOpen}
+              aria-haspopup="menu"
               className="flex items-center gap-2 p-1 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-all duration-150"
             >
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-400 to-violet-300 text-white font-bold flex items-center justify-center text-xs shadow-sm shadow-violet-300/30">
@@ -123,51 +157,54 @@ export function Header() {
 
             {/* Quick Menu Dropdown */}
             {isQuickMenuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsQuickMenuOpen(false)}
-                />
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#1a1626] border border-violet-100/80 dark:border-violet-800/30 shadow-xl shadow-violet-200/30 dark:shadow-violet-900/20 py-2 z-50 animate-fade-in text-xs">
-                  <div className="px-4 py-2.5 border-b border-violet-50 dark:border-violet-800/20">
-                    <p className="font-bold text-zinc-800 dark:text-zinc-100">{profile?.full_name}</p>
-                    <p className="text-zinc-400 text-[11px] truncate">{profile?.email}</p>
-                  </div>
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        setIsQuickMenuOpen(false);
-                        openNewAppointmentDrawer();
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-violet-50 dark:hover:bg-violet-500/10 text-zinc-600 dark:text-zinc-300 flex items-center gap-2 transition-colors"
-                    >
-                      <Calendar size={14} className="text-violet-400" />
-                      Agendar Horário
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsQuickMenuOpen(false);
-                        openNewCustomerDrawer();
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-violet-50 dark:hover:bg-violet-500/10 text-zinc-600 dark:text-zinc-300 flex items-center gap-2 transition-colors"
-                    >
-                      <UserPlus size={14} className="text-emerald-500" />
-                      Cadastrar Cliente
-                    </button>
-                  </div>
-                  <div className="pt-1 border-t border-violet-50 dark:border-violet-800/20">
-                    <button
-                      onClick={() => {
-                        setIsQuickMenuOpen(false);
-                        logout();
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-500 dark:text-rose-400 font-medium transition-colors"
-                    >
-                      Sair da Conta
-                    </button>
-                  </div>
+              <div
+                role="menu"
+                className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#1a1626] border border-violet-100/80 dark:border-violet-800/30 shadow-xl shadow-violet-200/30 dark:shadow-violet-900/20 py-2 z-50 animate-fade-in text-xs"
+              >
+                <div className="px-4 py-2.5 border-b border-violet-50 dark:border-violet-800/20">
+                  <p className="font-bold text-zinc-800 dark:text-zinc-100">{profile?.full_name}</p>
+                  <p className="text-zinc-400 text-[11px] truncate">{profile?.email}</p>
                 </div>
-              </>
+                <div className="py-1">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsQuickMenuOpen(false);
+                      openNewAppointmentDrawer();
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-violet-50 dark:hover:bg-violet-500/10 text-zinc-600 dark:text-zinc-300 flex items-center gap-2 transition-colors"
+                  >
+                    <Calendar size={14} className="text-violet-400" />
+                    Agendar Horário
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsQuickMenuOpen(false);
+                      openNewCustomerDrawer();
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-violet-50 dark:hover:bg-violet-500/10 text-zinc-600 dark:text-zinc-300 flex items-center gap-2 transition-colors"
+                  >
+                    <UserPlus size={14} className="text-emerald-500" />
+                    Cadastrar Cliente
+                  </button>
+                </div>
+                <div className="pt-1 border-t border-violet-50 dark:border-violet-800/20">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsQuickMenuOpen(false);
+                      logout();
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-500 dark:text-rose-400 font-medium transition-colors"
+                  >
+                    Sair da Conta
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
