@@ -21,13 +21,11 @@ import {
   LayoutDashboard,
   ArrowDownLeft,
   ArrowUpRight,
-  Wallet,
   Scissors,
   Building2,
   CreditCard,
   FileText,
   Plus,
-  Calendar,
   RotateCcw,
 } from 'lucide-react';
 
@@ -59,10 +57,9 @@ export default function Financeiro() {
   ];
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Visão Geral & Caixa', icon: LayoutDashboard },
     { id: 'receber', label: 'Contas a Receber', icon: ArrowUpRight },
     { id: 'pagar', label: 'Contas a Pagar', icon: ArrowDownLeft },
-    { id: 'fluxo', label: 'Fluxo de Caixa', icon: Wallet },
     { id: 'comissoes', label: 'Comissões', icon: Scissors },
     { id: 'mercadorias', label: 'Fornecedores & Estoque', icon: Building2 },
     { id: 'formas_pagamento', label: 'Formas & Sinal', icon: CreditCard },
@@ -130,7 +127,9 @@ export default function Financeiro() {
       </div>
 
       {/* Dynamic Financial Alerts */}
-      <FinancialAlerts onNavigateTab={(tab) => setActiveTab(tab)} />
+      <FinancialAlerts
+        onNavigateTab={(tab) => setActiveTab(tab === 'fluxo' ? 'dashboard' : tab)}
+      />
 
       {/* Main Navigation Tabs */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-zinc-200 dark:border-zinc-800 scrollbar-none">
@@ -157,11 +156,17 @@ export default function Financeiro() {
 
       {/* Tab Content Rendering */}
       <div>
-        {/* 1. Dashboard Tab */}
+        {/* 1. Visão Geral & Fluxo de Caixa Unificados */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             <FinancialKPIsGrid />
+            <FluxoCaixaTab
+              embedded
+              onOpenReceivable={() => setIsReceivableModalOpen(true)}
+              onOpenPayable={() => setIsPayableModalOpen(true)}
+            />
             <FinancialCharts
+              hideTopEmptyBanner
               onOpenReceivable={() => setIsReceivableModalOpen(true)}
               onOpenPayable={() => setIsPayableModalOpen(true)}
             />
@@ -174,19 +179,16 @@ export default function Financeiro() {
         {/* 3. Contas a Pagar Tab */}
         {activeTab === 'pagar' && <ContasPagarTab />}
 
-        {/* 4. Fluxo de Caixa Tab */}
-        {activeTab === 'fluxo' && <FluxoCaixaTab />}
-
-        {/* 5. Comissões Tab */}
+        {/* 4. Comissões Tab */}
         {activeTab === 'comissoes' && <ComissoesTab />}
 
-        {/* 6. Fornecedores & Mercadorias Tab */}
+        {/* 5. Fornecedores & Mercadorias Tab */}
         {activeTab === 'mercadorias' && <FornecedoresMercadoriasTab />}
 
-        {/* 7. Formas de Pagamento & Sinal Tab */}
+        {/* 6. Formas de Pagamento & Sinal Tab */}
         {activeTab === 'formas_pagamento' && <FormasPagamentoTab />}
 
-        {/* 8. Relatórios & DRE Tab */}
+        {/* 7. Relatórios & DRE Tab */}
         {activeTab === 'relatorios' && <RelatoriosTab />}
       </div>
 

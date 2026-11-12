@@ -17,6 +17,8 @@ import {
 import { getTodayDateString } from '../services/mockData';
 import { useProfessionalStore } from './professionalStore';
 import { financialApiService } from '../services/api/financialService';
+import { isDateInFinancialPeriod } from '../utils/financialPeriod';
+import { CashFlowSummary, computeCashFlowSummary } from '../utils/cashFlow';
 
 const STORAGE_KEY = 'agenda_ai_financial_v2';
 
@@ -149,6 +151,7 @@ interface FinancialState {
 
   clearAllFinancialData: () => void;
   getCashFlowEntries: (period?: FinancialPeriod) => CashFlowEntry[];
+  getCashFlowSummary: (period?: FinancialPeriod) => CashFlowSummary;
   getCommissionSummaries: () => CommissionSummary[];
 }
 
@@ -590,33 +593,8 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       const receivables = get().receivables;
       const payables = get().payables;
 
-      const isDateInPeriod = (dateStr: string) => {
-        if (!dateStr || period === 'all') return true;
-        const target = new Date(dateStr);
-        const curr = new Date(today);
-
-        if (period === 'today') {
-          return dateStr === today;
-        }
-        if (period === 'week') {
-          const diffDays = (curr.getTime() - target.getTime()) / (1000 * 3600 * 24);
-          return diffDays >= -1 && diffDays <= 7;
-        }
-        if (period === 'month') {
-          return (
-            target.getFullYear() === curr.getFullYear() &&
-            target.getMonth() === curr.getMonth()
-          );
-        }
-        if (period === 'next_month') {
-          const nextM = (curr.getMonth() + 1) % 12;
-          return target.getMonth() === nextM;
-        }
-        return true;
-      };
-
-      const filteredRec = receivables.filter((r) => isDateInPeriod(r.due_date));
-      const filteredPay = payables.filter((p) => isDateInPeriod(p.due_date));
+      const filteredRec = receivables.filter((r) => isDateInFinancialPeriod(r.due_date, period, today));
+      const filteredPay = payables.filter((p) => isDateInFinancialPeriod(p.due_date, period, today));
 
       const totalRevenue = filteredRec
         .filter((r) => r.status !== 'cancelled')
@@ -681,60 +659,16 @@ export const useFinancialStore = create<FinancialState>((set, get) => {
       };
     },
 
-    // Cash flow timeline entries
+    // Cash flow timeline entries (ordered newest first, with cumulative running balance)
     getCashFlowEntries: (periodParam) => {
-      const receivables = get().receivables;
-      const payables = get().payables;
+      return get().getCashFlowSummary(periodParam).entries;
+    },
 
-      const entries: CashFlowEntry[] = [];
-
-      receivables
-        .filter((r) => r.status === 'paid' || (r.status === 'partially_paid' && r.amount_paid > 0))
-        .forEach((r) => {
-          entries.push({
-            id: `flow-in-${r.id}`,
-            date: r.paid_at || r.due_date,
-            description: `${r.customer_name} — ${r.service_name || r.description}`,
-            type: 'income',
-            category: 'Atendimentos & Serviços',
-            amount: r.amount_paid || r.final_amount,
-            balance_after: 0,
-            payment_method: r.payment_method,
-            reference_id: r.id,
-            reference_type: 'receivable',
-          });
-        });
-
-      payables
-        .filter((p) => p.status === 'paid')
-        .forEach((p) => {
-          entries.push({
-            id: `flow-out-${p.id}`,
-            date: p.paid_at || p.due_date,
-            description: p.description,
-            type: 'expense',
-            category: p.category.toUpperCase(),
-            amount: p.paid_amount || p.amount,
-            balance_after: 0,
-            payment_method: p.payment_method || 'pix',
-            reference_id: p.id,
-            reference_type: 'payable',
-          });
-        });
-
-      entries.sort((a, b) => a.date.localeCompare(b.date));
-
-      let currentBalance = 0;
-      entries.forEach((entry) => {
-        if (entry.type === 'income') {
-          currentBalance += entry.amount;
-        } else {
-          currentBalance -= entry.amount;
-        }
-        entry.balance_after = currentBalance;
-      });
-
-      return entries.reverse();
+    // Consolidated Cash Flow summary + statement for a period
+    getCashFlowSummary: (periodParam) => {
+      const period = periodParam || get().activePeriod;
+      const today = getTodayDateString();
+      return computeCashFlowSummary(get().receivables, get().payables, period, today);
     },
 
     getCommissionSummaries: () => {

@@ -18,12 +18,14 @@ import { useAppointmentStore } from '../stores/appointmentStore';
 import { useCustomerStore } from '../stores/customerStore';
 import { useServiceStore } from '../stores/serviceStore';
 import { useProfessionalStore } from '../stores/professionalStore';
+import { useFinancialStore } from '../stores/financialStore';
 import { useUIStore } from '../stores/uiStore';
 import { StatsCard } from '../components/ui/StatsCard';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
+import { DashboardCashFlowCard } from '../components/dashboard/DashboardCashFlowCard';
 import { formatCurrency } from '../utils/format';
 import { openWhatsAppForAppointment } from '../services/whatsapp';
 import { AppointmentStatus } from '../types';
@@ -102,13 +104,27 @@ export default function Dashboard() {
   const { customers, fetchCustomers, openNewCustomerDrawer } = useCustomerStore();
   const { services, fetchServices, openNewServiceDrawer } = useServiceStore();
   const { professionals, fetchProfessionals, openNewProfessionalDrawer } = useProfessionalStore();
+  const { fetchFinancialData } = useFinancialStore();
+
+  const userRole = (profile?.role || 'receptionist').toLowerCase();
+  const canViewFinancial = ['super_admin', 'owner', 'admin'].includes(userRole);
 
   useEffect(() => {
     fetchAppointments();
     fetchCustomers();
     fetchServices();
     fetchProfessionals();
-  }, [fetchAppointments, fetchCustomers, fetchServices, fetchProfessionals]);
+    if (canViewFinancial) {
+      fetchFinancialData();
+    }
+  }, [
+    fetchAppointments,
+    fetchCustomers,
+    fetchServices,
+    fetchProfessionals,
+    fetchFinancialData,
+    canViewFinancial,
+  ]);
 
   const kpis = getKPIs();
   const todayAppointments = getTodayAppointments();
@@ -441,8 +457,11 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Right Column: Weekly Revenue Visualizer & Top Services (5 cols) */}
+        {/* Right Column: Cash Flow Summary + Weekly Revenue Visualizer & Top Services (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
+          {/* Resumo Executivo do Fluxo de Caixa (visível apenas para perfis com acesso financeiro) */}
+          {canViewFinancial && <DashboardCashFlowCard />}
+
           {/* Weekly Performance Visualizer */}
           <Card>
             <CardHeader

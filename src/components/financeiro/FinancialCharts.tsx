@@ -3,6 +3,8 @@ import { useFinancialStore } from '../../stores/financialStore';
 import { useServiceStore } from '../../stores/serviceStore';
 import { useProfessionalStore } from '../../stores/professionalStore';
 import { formatCurrency } from '../../utils/format';
+import { getTodayDateString } from '../../services/mockData';
+import { isDateInFinancialPeriod } from '../../utils/financialPeriod';
 import { EmptyState } from '../ui/EmptyState';
 import {
   Scissors,
@@ -15,20 +17,33 @@ import {
 interface FinancialChartsProps {
   onOpenReceivable?: () => void;
   onOpenPayable?: () => void;
+  hideTopEmptyBanner?: boolean;
 }
 
-export function FinancialCharts({ onOpenReceivable, onOpenPayable }: FinancialChartsProps) {
-  const { receivables, payables } = useFinancialStore();
+export function FinancialCharts({
+  onOpenReceivable,
+  onOpenPayable,
+  hideTopEmptyBanner = false,
+}: FinancialChartsProps) {
+  const { receivables, payables, activePeriod } = useFinancialStore();
   const { services, openNewServiceDrawer } = useServiceStore();
   const { professionals, openNewProfessionalDrawer } = useProfessionalStore();
   const isCompletelyEmpty = receivables.length === 0 && payables.length === 0;
+  const today = getTodayDateString();
+
+  const periodReceivables = receivables.filter((r) =>
+    isDateInFinancialPeriod(r.due_date, activePeriod, today)
+  );
+  const periodPayables = payables.filter((p) =>
+    isDateInFinancialPeriod(p.due_date, activePeriod, today)
+  );
 
   // 1. Receitas x Despesas
-  const totalIn = receivables
+  const totalIn = periodReceivables
     .filter((r) => r.status === 'paid' || r.status === 'partially_paid')
     .reduce((sum, r) => sum + r.amount_paid, 0);
 
-  const totalOut = payables
+  const totalOut = periodPayables
     .filter((p) => p.status === 'paid')
     .reduce((sum, p) => sum + (p.paid_amount || p.amount), 0);
 
@@ -38,7 +53,7 @@ export function FinancialCharts({ onOpenReceivable, onOpenPayable }: FinancialCh
 
   // 2. Receitas por Serviço
   const serviceRevenueMap: Record<string, { count: number; total: number }> = {};
-  receivables
+  periodReceivables
     .filter((r) => r.status !== 'cancelled' && r.service_name)
     .forEach((r) => {
       const sName = r.service_name!;
@@ -58,7 +73,7 @@ export function FinancialCharts({ onOpenReceivable, onOpenPayable }: FinancialCh
 
   // 3. Receitas por Profissional
   const profRevenueMap: Record<string, { count: number; total: number }> = {};
-  receivables
+  periodReceivables
     .filter((r) => r.status !== 'cancelled' && r.professional_name)
     .forEach((r) => {
       const pName = r.professional_name!;
@@ -85,7 +100,7 @@ export function FinancialCharts({ onOpenReceivable, onOpenPayable }: FinancialCh
     boleto: { name: 'Boleto', count: 0, total: 0, color: 'bg-zinc-400' },
   };
 
-  receivables
+  periodReceivables
     .filter((r) => r.status === 'paid' || r.status === 'partially_paid')
     .forEach((r) => {
       const m = r.payment_method || 'pix';
@@ -103,7 +118,7 @@ export function FinancialCharts({ onOpenReceivable, onOpenPayable }: FinancialCh
 
   return (
     <div className="space-y-6">
-      {isCompletelyEmpty && (
+      {isCompletelyEmpty && !hideTopEmptyBanner && (
         <EmptyState
           size="sm"
           icon={<Wallet size={22} />}
