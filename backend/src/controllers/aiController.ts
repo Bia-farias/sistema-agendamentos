@@ -4,6 +4,20 @@ import { aiService } from '../services/aiService.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 
 export const aiController = {
+  async status(req: AuthenticatedRequest, res: Response) {
+    try {
+      const tenantId = req.user?.tenantId;
+      if (!tenantId) {
+        return sendError(res, 'Tenant não identificado no token', 400);
+      }
+
+      return sendSuccess(res, aiService.getStatus());
+    } catch (error: any) {
+      console.error('[AI Controller] Erro ao verificar status:', error);
+      return sendError(res, error.message || 'Erro ao verificar status da IA', 500);
+    }
+  },
+
   async chat(req: AuthenticatedRequest, res: Response) {
     try {
       const tenantId = req.user?.tenantId;
@@ -11,15 +25,12 @@ export const aiController = {
         return sendError(res, 'Tenant não identificado no token', 400);
       }
 
-      const reply = await aiService.chat(tenantId, req.body);
+      const result = await aiService.chat(tenantId, req.body);
 
-      return sendSuccess(res, {
-        reply,
-      });
+      return sendSuccess(res, result);
     } catch (error: any) {
       console.error('[AI Controller] Erro no processamento:', error);
       return sendError(res, error.message || 'Erro ao processar mensagem com assistente IA', 500);
     }
   },
 };
-

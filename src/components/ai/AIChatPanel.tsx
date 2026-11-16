@@ -8,6 +8,8 @@ import {
   Trash2,
   User,
   ChevronDown,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 // ─── Markdown-like renderer (simple, no dependency) ────────────────────────
@@ -128,11 +130,22 @@ function inlineFormat(text: string): React.ReactNode {
 // ─── Message Bubble ─────────────────────────────────────────────────────────
 
 function MessageBubble({ message }: { message: AIChatMessage }) {
+  const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
   const timeStr = message.timestamp.toLocaleTimeString('pt-BR', {
     hour: '2-digit',
     minute: '2-digit',
   });
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Clipboard indisponível em contextos sem permissão
+    }
+  };
 
   if (isUser) {
     return (
@@ -151,7 +164,7 @@ function MessageBubble({ message }: { message: AIChatMessage }) {
   }
 
   return (
-    <div className="flex justify-start gap-2 items-end animate-fade-in min-w-0">
+    <div className="flex justify-start gap-2 items-end animate-fade-in min-w-0 group">
       <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-violet-600 to-fuchsia-600 flex items-center justify-center shrink-0 mb-4 shadow-md shadow-violet-900/40">
         <Sparkles size={12} className="text-white" />
       </div>
@@ -159,7 +172,27 @@ function MessageBubble({ message }: { message: AIChatMessage }) {
         <div className="bg-zinc-800/90 border border-zinc-700/60 text-zinc-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-md break-words overflow-hidden">
           {renderContent(message.content)}
         </div>
-        <p className="text-[10px] text-zinc-500 mt-1">{timeStr}</p>
+        <div className="flex items-center justify-between gap-2 mt-1">
+          <p className="text-[10px] text-zinc-500">{timeStr}</p>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="text-[10px] text-zinc-500 hover:text-violet-400 flex items-center gap-1 transition-colors cursor-pointer"
+            title="Copiar resposta"
+          >
+            {copied ? (
+              <>
+                <Check size={11} className="text-emerald-400" />
+                <span className="text-emerald-400">Copiado</span>
+              </>
+            ) : (
+              <>
+                <Copy size={11} />
+                <span>Copiar</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -187,7 +220,7 @@ function TypingIndicator() {
 // ─── Quick Suggestion Chips ──────────────────────────────────────────────────
 
 const SUGGESTIONS = [
-  '📊 Quanto faturamos hoje?',
+  '💰 Como está o caixa e faturamento?',
   '📅 Quem está na agenda hoje?',
   '⭐ Quais são nossos clientes VIP?',
   '✂️ Liste nossos serviços e preços',
@@ -234,7 +267,8 @@ function SuggestionChips({
 // ─── Main Chat Panel ─────────────────────────────────────────────────────────
 
 export function AIChatPanel() {
-  const { isOpen, messages, isLoading, closeChat, sendMessage, clearHistory } = useAIChatStore();
+  const { isOpen, messages, isLoading, aiStatus, closeChat, sendMessage, clearHistory } =
+    useAIChatStore();
   const { height: viewportHeight, offsetTop: viewportOffsetTop, isKeyboardOpen } =
     useVisualViewport();
   const [input, setInput] = useState('');
@@ -314,7 +348,7 @@ export function AIChatPanel() {
     sendMessage(text);
   };
 
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+  const isGroqConnected = aiStatus.connected;
 
   return (
     <>
@@ -352,7 +386,9 @@ export function AIChatPanel() {
                 Assistente IA
               </h2>
               <p className="text-[10px] text-zinc-400 font-medium truncate">
-                {apiKey ? '🟢 Groq conectado' : '🟡 Modo simulado'} · Sempre atualizado
+                {isGroqConnected
+                  ? '🟢 Groq conectada · Llama 3.3'
+                  : '🟡 Assistente contextual'} · Sempre atualizado
               </p>
             </div>
           </div>
@@ -412,11 +448,10 @@ export function AIChatPanel() {
                   agenda, clientes e muito mais. O que deseja saber?
                 </p>
               </div>
-              {!apiKey && !isKeyboardOpen && (
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 text-[11px] text-amber-400 max-w-[300px] text-left">
-                  <strong>🔧 Modo Simulado:</strong> Configure{' '}
-                  <code className="bg-amber-500/20 px-1 rounded">VITE_GROQ_API_KEY</code> no seu{' '}
-                  <code>.env</code> para usar a IA real com Groq.
+              {aiStatus.checked && !isGroqConnected && !isKeyboardOpen && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-3.5 py-2.5 text-[11px] text-amber-300/95 max-w-[320px] text-left leading-relaxed">
+                  <strong>⚙️ Modo Contextual Ativo:</strong> já respondo usando os dados reais da sua conta. Para respostas generativas com <strong>Llama 3.3 (Groq)</strong>, adicione{' '}
+                  <code className="bg-amber-500/20 px-1 rounded">GROQ_API_KEY</code> nas variáveis do servidor (Railway).
                 </div>
               )}
             </div>
