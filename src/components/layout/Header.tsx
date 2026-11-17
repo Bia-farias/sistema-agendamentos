@@ -3,7 +3,6 @@ import {
   Bell,
   Sun,
   Moon,
-  Plus,
   Search,
   Calendar,
   UserPlus,
@@ -12,7 +11,6 @@ import { useAuthStore } from '../../stores/authStore';
 import { useThemeStore } from '../../stores/themeStore';
 import { useAppointmentStore } from '../../stores/appointmentStore';
 import { useCustomerStore } from '../../stores/customerStore';
-import { Button } from '../ui/Button';
 import { Drawer } from '../ui/Drawer';
 
 export function Header() {
@@ -99,18 +97,8 @@ export function Header() {
           </div>
         </div>
 
-        {/* Right Side: Actions, Notifications, Theme Toggle, Profile */}
+        {/* Right Side: Theme Toggle, Notifications, Profile */}
         <div className="flex items-center gap-2">
-          {/* Quick Action Button: New Appointment */}
-          <Button
-            size="sm"
-            leftIcon={<Plus size={15} />}
-            onClick={() => openNewAppointmentDrawer()}
-            className="hidden sm:inline-flex shadow-sm shadow-violet-400/20"
-          >
-            Novo Agendamento
-          </Button>
-
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
