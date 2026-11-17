@@ -1,4 +1,4 @@
-name: CI - Build & Typecheck
+name: CI - Build, Typecheck & Tests
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [ main, master ]
 
 jobs:
-  build:
-    name: Typecheck & Build
+  build-and-test:
+    name: Verification (Frontend & Backend)
     runs-on: ubuntu-latest
 
     steps:
@@ -21,8 +21,17 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install Dependencies
+      - name: Install Frontend Dependencies
         run: npm ci
 
-      - name: Run Build (TypeScript + Vite)
+      - name: Run Frontend Tests (Vitest)
+        run: npm test
+
+      - name: Run Frontend Build (TypeScript + Vite)
         run: npm run build
+
+      - name: Install Backend Dependencies
+        run: npm --prefix backend install
+
+      - name: Run Backend Build (Prisma + TypeScript)
+        run: npm --prefix backend run build
