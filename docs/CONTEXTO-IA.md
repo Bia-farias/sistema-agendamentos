@@ -32,3 +32,4 @@ Este documento define o modelo mental permanente e as diretrizes obrigatórias p
 - **Backend:** Node.js 20.x, Express 4.21, Prisma ORM 5.22, Zod 3.23.
 - **Banco de Dados:** PostgreSQL hospedado no Supabase com RLS.
 - **IA:** Engine Llama 3.3 70B via Groq Cloud SDK com fallback contextual local.
+

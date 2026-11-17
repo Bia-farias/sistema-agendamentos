@@ -19,3 +19,4 @@ Documento operacional de acompanhamento das entregas, estabilidade e cobertura d
 | **Assistente IA (Groq)** | ✅ Estável | Status real da API, contexto seguro de caixa e prompt contextual |
 | **Suíte de Testes** | ✅ 44/44 | Testes unitários frontend passando 100% com Vitest |
 | **Builds de Produção** | ✅ 0 Erros | Frontend (Vite) e Backend (Prisma + TSC) compilando perfeitamente |
+

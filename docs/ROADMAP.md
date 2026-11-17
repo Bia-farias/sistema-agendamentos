@@ -17,3 +17,4 @@ Planejamento estratégico de próximas fases e melhorias contínuas.
 ### Fase 3: Gateway de Pagamento Integrado
 - [ ] Cobrança de sinal Pix dinâmica via QR Code com confirmação instantânea via webhook (Pix Copia e Cola).
 - [ ] Baixa automática da fatura no Contas a Receber após confirmação bancária.
+
