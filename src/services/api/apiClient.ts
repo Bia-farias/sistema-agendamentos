@@ -29,7 +29,12 @@ const BASE_URL =
 
 export function getAuthToken(): string | null {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    // Limpeza de legado: remove token do localStorage para impor política de sessão por aba
+    if (typeof localStorage !== 'undefined' && localStorage.getItem(TOKEN_KEY)) {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+    // sessionStorage persiste enquanto a aba estiver aberta; fechar a aba encerra a sessão
+    return typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(TOKEN_KEY) : null;
   } catch {
     return null;
   }
@@ -37,13 +42,18 @@ export function getAuthToken(): string | null {
 
 export function setAuthToken(token: string | null): void {
   try {
-    if (token) {
-      localStorage.setItem(TOKEN_KEY, token);
-    } else {
+    if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(TOKEN_KEY);
     }
+    if (typeof sessionStorage !== 'undefined') {
+      if (token) {
+        sessionStorage.setItem(TOKEN_KEY, token);
+      } else {
+        sessionStorage.removeItem(TOKEN_KEY);
+      }
+    }
   } catch {
-    // Silently ignore if localStorage is restricted
+    // Silently ignore if storage is restricted
   }
 }
 
