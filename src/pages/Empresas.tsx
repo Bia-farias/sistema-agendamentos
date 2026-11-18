@@ -328,7 +328,7 @@ export default function Empresas() {
             leftIcon={<Plus size={18} />}
             className="bg-white !text-violet-700 hover:bg-violet-50 font-extrabold shadow-md shrink-0 self-start lg:self-center"
           >
-            Nova Empresa + Login Admin
+            Nova Empresa
           </Button>
         </div>
       </div>
@@ -646,7 +646,7 @@ export default function Empresas() {
         title={
           editingCompany
             ? `Gerenciar ${editingCompany.name}`
-            : 'Nova Empresa + Acesso Admin'
+            : 'Nova Empresa'
         }
         description="Configure os dados da empresa cliente e defina o login e senha do seu Administrador (ADMIN)."
         size="md"
@@ -665,7 +665,7 @@ export default function Empresas() {
               isLoading={isSubmitting}
               leftIcon={<Check size={16} />}
             >
-              {editingCompany ? 'Salvar Alterações' : 'Criar Empresa e Acesso'}
+              {editingCompany ? 'Salvar Alterações' : 'Cadastrar Empresa'}
             </Button>
           </div>
         }
