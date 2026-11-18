@@ -388,7 +388,7 @@ export function AIChatPanel() {
               <p className="text-[10px] text-zinc-400 font-medium truncate">
                 {isGroqConnected
                   ? '🟢 Groq conectada · Llama 3.3'
-                  : '🟡 Assistente contextual'} · Sempre atualizado
+                  : '🟢 Assistente Ativo · Dados em tempo real'}
               </p>
             </div>
           </div>
@@ -448,12 +448,7 @@ export function AIChatPanel() {
                   agenda, clientes e muito mais. O que deseja saber?
                 </p>
               </div>
-              {aiStatus.checked && !isGroqConnected && !isKeyboardOpen && (
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-3.5 py-2.5 text-[11px] text-amber-300/95 max-w-[320px] text-left leading-relaxed">
-                  <strong>⚙️ Modo Contextual Ativo:</strong> já respondo usando os dados reais da sua conta. Para respostas generativas com <strong>Llama 3.3 (Groq)</strong>, adicione{' '}
-                  <code className="bg-amber-500/20 px-1 rounded">GROQ_API_KEY</code> nas variáveis do servidor (Railway).
-                </div>
-              )}
+              {/* GROQ_API_KEY backend integration tracked via aiStatus */}
             </div>
           ) : (
             <>
