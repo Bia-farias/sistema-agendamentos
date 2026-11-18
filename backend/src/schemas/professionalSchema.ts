@@ -47,6 +47,13 @@ export const createProfessionalSchema = z.object({
     portfolioUrls: z.array(z.string()).optional().default([]),
     breakStart: z.string().regex(timeRegex, 'Intervalo inicial deve estar no formato HH:mm').optional().default('12:00'),
     breakEnd: z.string().regex(timeRegex, 'Intervalo final deve estar no formato HH:mm').optional().default('13:00'),
+    accessPassword: z
+      .string()
+      .optional()
+      .nullable()
+      .refine((val) => !val || val.trim().length >= 6, {
+        message: 'A senha de acesso do profissional deve ter no mínimo 6 caracteres',
+      }),
   }),
 });
 
@@ -98,6 +105,13 @@ export const updateProfessionalSchema = z.object({
     portfolioUrls: z.array(z.string()).optional(),
     breakStart: z.string().regex(timeRegex, 'Intervalo inicial deve estar no formato HH:mm').optional().nullable(),
     breakEnd: z.string().regex(timeRegex, 'Intervalo final deve estar no formato HH:mm').optional().nullable(),
+    accessPassword: z
+      .string()
+      .optional()
+      .nullable()
+      .refine((val) => !val || val.trim().length >= 6, {
+        message: 'A senha de acesso do profissional deve ter no mínimo 6 caracteres',
+      }),
   }),
 });
 

@@ -7,12 +7,19 @@ import {
   Plus,
 } from 'lucide-react';
 import { useAppointmentStore } from '../../stores/appointmentStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useVisualViewport } from '../../hooks/useVisualViewport';
 import { cn } from '../../utils/cn';
 
 export function MobileBottomNav() {
   const { openNewAppointmentDrawer } = useAppointmentStore();
+  const { profile } = useAuthStore();
   const { isKeyboardOpen } = useVisualViewport();
+
+  const role = (profile?.role || '').toLowerCase();
+  if (role === 'owner' || role === 'super_admin') {
+    return null;
+  }
 
   const navItems = [
     { label: 'Início', path: '/dashboard', icon: LayoutDashboard },

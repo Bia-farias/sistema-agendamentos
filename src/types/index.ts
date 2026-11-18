@@ -79,6 +79,8 @@ export interface Professional {
   id: string;
   tenant_id: string;
   user_id?: string;
+  has_system_access?: boolean;
+  access_password?: string;
   name: string;
   email?: string;
   phone?: string;
@@ -97,6 +99,32 @@ export interface Professional {
   };
   break_start?: string;
   break_end?: string;
+}
+
+export interface SaasCompany {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  businessType: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  createdAt: string;
+  isActive: boolean;
+  admin: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone?: string | null;
+    isActive: boolean;
+  } | null;
+  metrics: {
+    professionalsCount: number;
+    clientsCount: number;
+    appointmentsCount: number;
+    servicesCount: number;
+  };
 }
 
 export interface Appointment {

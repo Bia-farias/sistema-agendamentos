@@ -38,18 +38,44 @@ function sanitizeClientDataForPrompt(
 
 describe('Fase 6: Controle de Acesso RBAC e Proteção LGPD no Frontend', () => {
   const allNavItems = [
-    { label: 'Dashboard', roles: ['super_admin', 'owner', 'admin', 'receptionist'] },
-    { label: 'Agenda' }, // Liberado para todos
-    { label: 'Clientes' }, // Liberado para todos
-    { label: 'Serviços' }, // Liberado para todos
-    { label: 'Profissionais', roles: ['super_admin', 'owner', 'admin'] },
-    { label: 'Financeiro', roles: ['super_admin', 'owner', 'admin'] },
-    { label: 'WhatsApp', roles: ['super_admin', 'owner', 'admin', 'receptionist'] },
-    { label: 'Configurações', roles: ['super_admin', 'owner', 'admin'] },
-    { label: 'Assistente IA' }, // Liberado para todos
+    { label: 'Empresas & Acessos', roles: ['super_admin', 'owner'] },
+    { label: 'Dashboard', roles: ['admin', 'receptionist'] },
+    { label: 'Agenda', roles: ['admin', 'professional', 'receptionist'] },
+    { label: 'Clientes', roles: ['admin', 'professional', 'receptionist'] },
+    { label: 'Serviços', roles: ['admin', 'professional', 'receptionist'] },
+    { label: 'Profissionais', roles: ['admin'] },
+    { label: 'Financeiro', roles: ['admin'] },
+    { label: 'WhatsApp', roles: ['admin', 'receptionist'] },
+    { label: 'Minha Página', roles: ['admin'] },
+    { label: 'Configurações', roles: ['admin'] },
+    { label: 'Assistente IA', roles: ['admin', 'professional', 'receptionist'] },
   ];
 
-  it('deve restringir o menu lateral para perfil PROFESSIONAL (ocultando Financeiro e Configurações)', () => {
+  it('deve direcionar o acesso OWNER exclusivamente para a Gestão de Empresas & Acessos SaaS', () => {
+    const ownerMenu = filterNavItemsByRole(allNavItems, 'owner');
+    const labels = ownerMenu.map((m) => m.label);
+
+    expect(labels).toEqual(['Empresas & Acessos']);
+  });
+
+  it('deve liberar todas as funcionalidades operacionais e financeiras da empresa para o perfil ADMIN', () => {
+    const adminMenu = filterNavItemsByRole(allNavItems, 'admin');
+    const labels = adminMenu.map((m) => m.label);
+
+    expect(labels).toContain('Dashboard');
+    expect(labels).toContain('Agenda');
+    expect(labels).toContain('Clientes');
+    expect(labels).toContain('Serviços');
+    expect(labels).toContain('Profissionais');
+    expect(labels).toContain('Financeiro');
+    expect(labels).toContain('WhatsApp');
+    expect(labels).toContain('Minha Página');
+    expect(labels).toContain('Configurações');
+    expect(labels).toContain('Assistente IA');
+    expect(labels).not.toContain('Empresas & Acessos');
+  });
+
+  it('deve restringir o menu lateral para perfil PROFESSIONAL (ocultando Financeiro, Profissionais e Configurações)', () => {
     const profMenu = filterNavItemsByRole(allNavItems, 'professional');
     const labels = profMenu.map((m) => m.label);
 
@@ -62,6 +88,7 @@ describe('Fase 6: Controle de Acesso RBAC e Proteção LGPD no Frontend', () => 
     expect(labels).not.toContain('Configurações');
     expect(labels).not.toContain('Profissionais');
     expect(labels).not.toContain('Dashboard');
+    expect(labels).not.toContain('Empresas & Acessos');
   });
 
   it('deve restringir o menu lateral para perfil RECEPTIONIST (ocultando Financeiro e Configurações)', () => {
@@ -78,14 +105,7 @@ describe('Fase 6: Controle de Acesso RBAC e Proteção LGPD no Frontend', () => 
     expect(labels).not.toContain('Financeiro');
     expect(labels).not.toContain('Configurações');
     expect(labels).not.toContain('Profissionais');
-  });
-
-  it('deve permitir acesso completo a todos os menus para OWNER e ADMIN', () => {
-    const ownerMenu = filterNavItemsByRole(allNavItems, 'owner');
-    expect(ownerMenu.length).toBe(allNavItems.length);
-
-    const adminMenu = filterNavItemsByRole(allNavItems, 'admin');
-    expect(adminMenu.length).toBe(allNavItems.length);
+    expect(labels).not.toContain('Empresas & Acessos');
   });
 
   it('deve validar permissão de rota no ProtectedRoute', () => {

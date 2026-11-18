@@ -139,7 +139,11 @@ export function Header() {
                 <p className="font-semibold text-zinc-800 dark:text-zinc-100 leading-tight">
                   {profile?.full_name || 'Admin'}
                 </p>
-                <p className="text-[10px] text-zinc-400">{tenant?.name || 'Studio'}</p>
+                <p className="text-[10px] text-zinc-400">
+                  {profile?.role === 'owner' || profile?.role === 'super_admin'
+                    ? 'Owner SaaS (Master)'
+                    : tenant?.name || 'Studio'}
+                </p>
               </div>
             </button>
 
@@ -153,32 +157,34 @@ export function Header() {
                   <p className="font-bold text-zinc-800 dark:text-zinc-100">{profile?.full_name}</p>
                   <p className="text-zinc-400 text-[11px] truncate">{profile?.email}</p>
                 </div>
-                <div className="py-1">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setIsQuickMenuOpen(false);
-                      openNewAppointmentDrawer();
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-violet-50 dark:hover:bg-violet-500/10 text-zinc-600 dark:text-zinc-300 flex items-center gap-2 transition-colors"
-                  >
-                    <Calendar size={14} className="text-violet-400" />
-                    Agendar Horário
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setIsQuickMenuOpen(false);
-                      openNewCustomerDrawer();
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-violet-50 dark:hover:bg-violet-500/10 text-zinc-600 dark:text-zinc-300 flex items-center gap-2 transition-colors"
-                  >
-                    <UserPlus size={14} className="text-emerald-500" />
-                    Cadastrar Cliente
-                  </button>
-                </div>
+                {profile?.role !== 'owner' && profile?.role !== 'super_admin' && (
+                  <div className="py-1">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsQuickMenuOpen(false);
+                        openNewAppointmentDrawer();
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-violet-50 dark:hover:bg-violet-500/10 text-zinc-600 dark:text-zinc-300 flex items-center gap-2 transition-colors"
+                    >
+                      <Calendar size={14} className="text-violet-400" />
+                      Agendar Horário
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsQuickMenuOpen(false);
+                        openNewCustomerDrawer();
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-violet-50 dark:hover:bg-violet-500/10 text-zinc-600 dark:text-zinc-300 flex items-center gap-2 transition-colors"
+                    >
+                      <UserPlus size={14} className="text-emerald-500" />
+                      Cadastrar Cliente
+                    </button>
+                  </div>
+                )}
                 <div className="pt-1 border-t border-violet-50 dark:border-violet-800/20">
                   <button
                     type="button"

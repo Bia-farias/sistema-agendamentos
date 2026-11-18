@@ -14,6 +14,7 @@ import {
   LogOut,
   Settings,
   Globe,
+  Building2,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -22,7 +23,7 @@ import { cn } from '../../utils/cn';
 
 export function Sidebar() {
   const location = useLocation();
-  const { isSidebarOpen, toggleSidebar, addToast } = useUIStore();
+  const { isSidebarOpen, toggleSidebar } = useUIStore();
   const { tenant, profile, logout } = useAuthStore();
   const { openChat } = useAIChatStore();
 
@@ -37,20 +38,30 @@ export function Sidebar() {
   }
 
   const navItems: NavItem[] = [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['super_admin', 'owner', 'admin', 'receptionist'] },
-    { label: 'Agenda', path: '/agenda', icon: Calendar },
-    { label: 'Clientes', path: '/clientes', icon: Users },
-    { label: 'Serviços', path: '/servicos', icon: Scissors },
-    { label: 'Profissionais', path: '/profissionais', icon: UserCheck, roles: ['super_admin', 'owner', 'admin'] },
-    { label: 'Financeiro', path: '/financeiro', icon: DollarSign, roles: ['super_admin', 'owner', 'admin'] },
-    { label: 'WhatsApp', path: '/whatsapp', icon: MessageSquare, roles: ['super_admin', 'owner', 'admin', 'receptionist'] },
-    { label: 'Minha Página', path: '/minha-pagina', icon: Globe, roles: ['super_admin', 'owner', 'admin'] },
-    { label: 'Configurações', path: '/configuracoes', icon: Settings, roles: ['super_admin', 'owner', 'admin'] },
+    // Painel Master SaaS (Exclusivo para acesso OWNER / SUPER_ADMIN)
+    {
+      label: 'Empresas & Acessos',
+      path: '/empresas',
+      icon: Building2,
+      badge: 'SaaS',
+      roles: ['super_admin', 'owner'],
+    },
+    // Módulos Operacionais e Financeiros da Empresa (ADMIN, PROFESSIONAL, RECEPTIONIST)
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'receptionist'] },
+    { label: 'Agenda', path: '/agenda', icon: Calendar, roles: ['admin', 'professional', 'receptionist'] },
+    { label: 'Clientes', path: '/clientes', icon: Users, roles: ['admin', 'professional', 'receptionist'] },
+    { label: 'Serviços', path: '/servicos', icon: Scissors, roles: ['admin', 'professional', 'receptionist'] },
+    { label: 'Profissionais', path: '/profissionais', icon: UserCheck, roles: ['admin'] },
+    { label: 'Financeiro', path: '/financeiro', icon: DollarSign, roles: ['admin'] },
+    { label: 'WhatsApp', path: '/whatsapp', icon: MessageSquare, roles: ['admin', 'receptionist'] },
+    { label: 'Minha Página', path: '/minha-pagina', icon: Globe, roles: ['admin'] },
+    { label: 'Configurações', path: '/configuracoes', icon: Settings, roles: ['admin'] },
     {
       label: 'Assistente IA',
       path: '#ia',
       icon: Sparkles,
       highlight: true,
+      roles: ['admin', 'professional', 'receptionist'],
       onClick: (e: React.MouseEvent) => {
         e.preventDefault();
         openChat();
@@ -59,6 +70,7 @@ export function Sidebar() {
   ];
 
   const userRole = (profile?.role || 'receptionist').toLowerCase();
+  const isOwnerRole = userRole === 'owner' || userRole === 'super_admin';
   const visibleNavItems = navItems.filter((item) => {
     if (!item.roles || item.roles.length === 0) return true;
     return item.roles.includes(userRole);
@@ -82,11 +94,11 @@ export function Sidebar() {
               <span className="font-extrabold text-base tracking-tight text-zinc-800 dark:text-zinc-50 flex items-center gap-1.5">
                 Agenda AI
                 <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300 border border-violet-200/80 dark:border-violet-500/20">
-                  PRO
+                  {isOwnerRole ? 'SAAS' : 'PRO'}
                 </span>
               </span>
               <span className="text-[11px] text-zinc-400 dark:text-zinc-500 truncate max-w-[130px]">
-                {tenant?.name || 'Meu Estabelecimento'}
+                {isOwnerRole ? 'Controle Master SaaS' : tenant?.name || 'Meu Estabelecimento'}
               </span>
             </div>
           )}
@@ -106,7 +118,9 @@ export function Sidebar() {
       <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         {visibleNavItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive =
+            location.pathname === item.path ||
+            (isOwnerRole && item.path === '/empresas' && location.pathname === '/dashboard');
 
           return (
             <NavLink
@@ -157,43 +171,40 @@ export function Sidebar() {
         })}
       </div>
 
-      {/* Mini Card de Plano Atual & Upgrade */}
-      {isSidebarOpen ? (
+      {/* Mini Card de Plano Atual & Upgrade (ou Controle SaaS para Owner) */}
+      {isOwnerRole ? (
+        isSidebarOpen && (
+          <div className="mx-3 mb-3 p-3 rounded-2xl bg-gradient-to-br from-amber-500/10 via-violet-500/5 to-transparent border border-amber-200/70 dark:border-amber-800/40">
+            <div className="flex items-center justify-between gap-1 mb-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                <Sparkles size={11} />
+                Acesso Master
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
+                OWNER
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              Gestão de Empresas e Acessos Admin
+            </p>
+          </div>
+        )
+      ) : isSidebarOpen ? (
         <div className="mx-3 mb-3 p-3 rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-transparent border border-violet-200/70 dark:border-violet-800/40">
           <div className="flex items-center justify-between gap-1 mb-1">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-violet-600 dark:text-violet-400 flex items-center gap-1">
               <Sparkles size={11} />
               Plano Ativo
             </span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300">
-              Free 7 Dias
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 uppercase">
+              {tenant?.plan || 'PRO'}
             </span>
           </div>
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-            Single • 7 dias de avaliação
+            {tenant?.name || 'Empresa Ativa'}
           </p>
-          <a
-            href="/#planos"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2.5 block w-full py-1.5 px-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-[11px] font-extrabold text-center shadow-xs shadow-violet-500/20 hover:shadow-violet-500/30 transition-all"
-          >
-            Fazer Upgrade ⚡
-          </a>
         </div>
-      ) : (
-        <div className="mb-3 flex justify-center">
-          <a
-            href="/#planos"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Ver Planos e Upgrade"
-            className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center hover:scale-105 transition-transform"
-          >
-            <Sparkles size={16} />
-          </a>
-        </div>
-      )}
+      ) : null}
 
       {/* Footer User Profile & Logout */}
       <div className="p-3 border-t border-violet-100/60 dark:border-violet-900/20 bg-violet-50/30 dark:bg-violet-500/5">
@@ -204,7 +215,7 @@ export function Sidebar() {
           {isSidebarOpen && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-zinc-800 dark:text-zinc-100 truncate">
-                {profile?.full_name || 'Super Administrador'}
+                {profile?.full_name || 'Administrador'}
               </p>
               <span
                 className={cn(
@@ -219,9 +230,9 @@ export function Sidebar() {
                 )}
               >
                 {profile?.role === 'super_admin' || profile?.role === 'owner'
-                  ? 'Super Adm 👑'
+                  ? 'Owner SaaS 👑'
                   : profile?.role === 'admin'
-                  ? 'Admin 🛡️'
+                  ? 'Empresa (Admin) 🛡️'
                   : profile?.role === 'professional'
                   ? 'Profissional'
                   : 'Recepção'}

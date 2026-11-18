@@ -31,5 +31,43 @@ export const tenantController = {
       return next(error);
     }
   },
+
+  async listSaasCompanies(_req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const companies = await tenantService.listSaasCompanies();
+      return sendSuccess(res, companies, 200);
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async createSaasCompany(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const created = await tenantService.createSaasCompany(req.body);
+      return sendSuccess(res, created, 201);
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async updateSaasCompany(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const updated = await tenantService.updateSaasCompany(id, req.body);
+      return sendSuccess(res, updated, 200);
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async deleteSaasCompany(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await tenantService.deleteSaasCompany(id);
+      return sendSuccess(res, result, 200);
+    } catch (error) {
+      return next(error);
+    }
+  },
 };
 

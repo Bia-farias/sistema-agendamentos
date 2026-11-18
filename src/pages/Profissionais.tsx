@@ -14,7 +14,8 @@ import {
   Percent,
   Edit2,
   Trash2,
-  Sparkles,
+  KeyRound,
+  ShieldCheck,
 } from 'lucide-react';
 import { formatPhone } from '../utils/format';
 
@@ -41,7 +42,7 @@ export default function Profissionais() {
             Equipe de Profissionais
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Gerencie colaboradores, escalas de atendimento, especialidades e comissões.
+            Gerencie colaboradores, escalas de atendimento, comissões e crie o login e senha de acesso de cada profissional.
           </p>
         </div>
 
@@ -134,6 +135,38 @@ export default function Profissionais() {
                       {prof.working_hours.start} às {prof.working_hours.end}
                     </p>
                   )}
+                </div>
+
+                {/* System Access Status Box */}
+                <div className="mt-3 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200/70 dark:border-zinc-800 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ShieldCheck
+                      size={14}
+                      className={
+                        prof.has_system_access || prof.user_id || prof.email
+                          ? 'text-cyan-600 dark:text-cyan-400 shrink-0'
+                          : 'text-zinc-400 shrink-0'
+                      }
+                    />
+                    <div className="truncate">
+                      <p className="text-[11px] font-bold text-zinc-700 dark:text-zinc-200 truncate">
+                        {prof.has_system_access || prof.user_id || prof.email
+                          ? 'Acesso Profissional Ativo'
+                          : 'Sem login configurado'}
+                      </p>
+                      <p className="text-[10px] text-zinc-400 truncate">
+                        {prof.email || 'Clique ao lado para criar login e senha'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openEditProfessionalDrawer(prof.id)}
+                    className="shrink-0 px-2.5 py-1 rounded-lg bg-cyan-50 dark:bg-cyan-500/10 hover:bg-cyan-100 dark:hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-200/70 dark:border-cyan-500/20 text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <KeyRound size={11} />
+                    {prof.has_system_access || prof.user_id || prof.email ? 'Senha' : 'Criar Login'}
+                  </button>
                 </div>
               </div>
 

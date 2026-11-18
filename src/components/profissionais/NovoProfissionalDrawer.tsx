@@ -5,7 +5,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { Drawer } from '../ui/Drawer';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Check, User, Phone, Mail, Percent, Sparkles, Clock } from 'lucide-react';
+import { Check, User, Phone, Mail, Percent, Sparkles, Lock, Eye, EyeOff, KeyRound } from 'lucide-react';
 
 export function NovoProfissionalDrawer() {
   const { tenant } = useAuthStore();
@@ -25,6 +25,8 @@ export function NovoProfissionalDrawer() {
   const [role, setRole] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [accessPassword, setAccessPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [commission, setCommission] = useState('40');
   const [specialtiesText, setSpecialtiesText] = useState('');
   const [startTime, setStartTime] = useState('09:00');
@@ -43,6 +45,8 @@ export function NovoProfissionalDrawer() {
       setRole(editingProf.role);
       setPhone(editingProf.phone || '');
       setEmail(editingProf.email || '');
+      setAccessPassword('');
+      setShowPassword(false);
       setCommission(String(editingProf.commission_percentage));
       setSpecialtiesText(editingProf.specialties.join(', '));
       setStartTime(editingProf.working_hours?.start || '09:00');
@@ -58,6 +62,8 @@ export function NovoProfissionalDrawer() {
       setRole('');
       setPhone('');
       setEmail('');
+      setAccessPassword('');
+      setShowPassword(false);
       setCommission('40');
       setSpecialtiesText('');
       setStartTime('09:00');
@@ -83,6 +89,25 @@ export function NovoProfissionalDrawer() {
       return;
     }
 
+    if (accessPassword.trim()) {
+      if (accessPassword.trim().length < 6) {
+        addToast({
+          type: 'error',
+          title: 'Senha muito curta',
+          message: 'A senha de acesso do profissional deve ter no mínimo 6 caracteres.',
+        });
+        return;
+      }
+      if (!email.trim()) {
+        addToast({
+          type: 'error',
+          title: 'E-mail Obrigatório para Login',
+          message: 'Informe o e-mail de login do profissional para definir a senha de acesso.',
+        });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -96,12 +121,15 @@ export function NovoProfissionalDrawer() {
         .map((s) => s.trim())
         .filter(Boolean);
 
+      const hasPassword = accessPassword.trim().length >= 6;
+
       if (isEdit && editingProf) {
         await updateProfessional(editingProf.id, {
           name: name.trim(),
           role: role.trim(),
           phone: phone.trim() || undefined,
           email: email.trim() || undefined,
+          ...(hasPassword ? { access_password: accessPassword.trim(), has_system_access: true } : {}),
           avatar_url: avatarUrl.trim() || undefined,
           bio: bio.trim() || undefined,
           portfolio_urls: portfolioUrls,
@@ -119,8 +147,10 @@ export function NovoProfissionalDrawer() {
 
         addToast({
           type: 'success',
-          title: 'Profissional Atualizado',
-          message: `Os dados de ${name} foram atualizados.`,
+          title: hasPassword ? 'Profissional e Senha Atualizados!' : 'Profissional Atualizado',
+          message: hasPassword
+            ? `O login (${email.trim()}) e a senha de acesso de ${name} foram configurados.`
+            : `Os dados de ${name} foram atualizados.`,
         });
       } else {
         await addProfessional({
@@ -129,6 +159,7 @@ export function NovoProfissionalDrawer() {
           role: role.trim(),
           phone: phone.trim() || undefined,
           email: email.trim() || undefined,
+          ...(hasPassword ? { access_password: accessPassword.trim(), has_system_access: true } : {}),
           avatar_url: avatarUrl.trim() || undefined,
           bio: bio.trim() || undefined,
           portfolio_urls: portfolioUrls,
@@ -148,16 +179,18 @@ export function NovoProfissionalDrawer() {
         addToast({
           type: 'success',
           title: 'Profissional Cadastrado!',
-          message: `${name} foi adicionado à equipe.`,
+          message: hasPassword
+            ? `${name} foi adicionado com login e senha de acesso Profissional ativos!`
+            : `${name} foi adicionado à equipe.`,
         });
       }
 
       closeDrawer();
-    } catch (err) {
+    } catch (err: any) {
       addToast({
         type: 'error',
         title: 'Erro ao salvar',
-        message: 'Ocorreu um erro ao salvar o profissional.',
+        message: err?.message || 'Ocorreu um erro ao salvar o profissional.',
       });
     } finally {
       setIsSubmitting(false);
@@ -227,14 +260,59 @@ export function NovoProfissionalDrawer() {
           />
         </div>
 
-        <Input
-          label="E-mail de Acesso"
-          type="email"
-          placeholder="profissional@agendaai.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          leftIcon={<Mail size={16} />}
-        />
+        {/* Bloco de Criação / Redefinição de Login e Senha do Profissional */}
+        <div className="p-3.5 rounded-2xl bg-cyan-50/60 dark:bg-cyan-950/20 border border-cyan-200/70 dark:border-cyan-900/40 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-extrabold text-cyan-800 dark:text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+              <KeyRound size={14} />
+              Credenciais de Acesso (Perfil Profissional)
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const randomDigits = Math.floor(1000 + Math.random() * 9000);
+                setAccessPassword(`Prof@${randomDigits}`);
+                setShowPassword(true);
+              }}
+              className="text-[11px] font-bold text-cyan-700 dark:text-cyan-300 hover:underline cursor-pointer"
+            >
+              Gerar senha rápida
+            </button>
+          </div>
+          <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
+            {isEdit
+              ? 'Altere o e-mail de login ou informe uma nova senha abaixo para criar ou redefinir o acesso deste profissional ao sistema.'
+              : 'Defina o e-mail e a senha abaixo para que o profissional possa entrar no sistema com o acesso Profissional.'}
+          </p>
+
+          <Input
+            label="E-mail de Login do Profissional"
+            type="email"
+            placeholder="profissional@empresa.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            leftIcon={<Mail size={16} />}
+          />
+
+          <Input
+            label={isEdit ? 'Nova Senha de Acesso (deixe vazio para manter a atual)' : 'Senha de Acesso do Profissional'}
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Mínimo de 6 caracteres"
+            value={accessPassword}
+            onChange={(e) => setAccessPassword(e.target.value)}
+            leftIcon={<Lock size={16} />}
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors cursor-pointer p-0.5"
+                title={showPassword ? 'Ocultar senha' : 'Ver senha'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            }
+          />
+        </div>
 
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">

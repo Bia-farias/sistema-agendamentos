@@ -22,6 +22,22 @@ const Configuracoes = React.lazy(() => import('./pages/Configuracoes'));
 const MinhaPagina = React.lazy(() => import('./pages/MinhaPagina'));
 const AgendamentoCliente = React.lazy(() => import('./pages/AgendamentoCliente'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
+const Empresas = React.lazy(() => import('./pages/Empresas'));
+
+function RoleBasedDashboard() {
+  const { profile } = useAuthStore();
+  const role = (profile?.role || '').toLowerCase();
+
+  if (role === 'owner' || role === 'super_admin') {
+    return <Empresas />;
+  }
+
+  if (role === 'professional') {
+    return <Navigate to="/agenda" replace />;
+  }
+
+  return <Dashboard />;
+}
 
 export default function App() {
   const { initialize } = useAuthStore();
@@ -67,7 +83,15 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<RoleBasedDashboard />} />
+            <Route
+              path="/empresas"
+              element={
+                <ProtectedRoute allowedRoles={['owner', 'super_admin']}>
+                  <Empresas />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/servicos" element={<Servicos />} />

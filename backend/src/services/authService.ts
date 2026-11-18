@@ -50,7 +50,7 @@ export const authService = {
           fullName: input.fullName,
           email: input.email.toLowerCase(),
           password: hashedPassword,
-          role: 'OWNER',
+          role: 'ADMIN',
           phone: input.businessPhone,
           isActive: true,
         },

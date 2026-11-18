@@ -40,7 +40,14 @@ export default function Login() {
           title: 'Bem-vindo de volta!',
           message: 'Acesso realizado com sucesso.',
         });
-        navigate('/dashboard');
+        const currentRole = (useAuthStore.getState().profile?.role || '').toLowerCase();
+        if (currentRole === 'owner' || currentRole === 'super_admin') {
+          navigate('/empresas');
+        } else if (currentRole === 'professional') {
+          navigate('/agenda');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         addToast({
           type: 'error',

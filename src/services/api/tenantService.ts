@@ -1,4 +1,28 @@
 import { apiClient } from './apiClient';
+import { SaasCompany } from '../../types';
+
+export interface CreateSaasCompanyPayload {
+  name: string;
+  businessType?: string;
+  plan?: string;
+  phone?: string | null;
+  address?: string | null;
+  adminName: string;
+  adminEmail: string;
+  adminPassword: string;
+}
+
+export interface UpdateSaasCompanyPayload {
+  name?: string;
+  businessType?: string;
+  plan?: string;
+  phone?: string | null;
+  address?: string | null;
+  adminName?: string;
+  adminEmail?: string;
+  adminPassword?: string | null;
+  isActive?: boolean;
+}
 
 export interface MyPageData {
   id: string;
@@ -53,6 +77,22 @@ export const tenantApiService = {
 
   async updateMyPage(data: UpdateMyPagePayload): Promise<MyPageData> {
     return apiClient.put<MyPageData>('/tenant/my-page', data);
+  },
+
+  async listSaasCompanies(): Promise<SaasCompany[]> {
+    return apiClient.get<SaasCompany[]>('/tenant/saas/companies');
+  },
+
+  async createSaasCompany(data: CreateSaasCompanyPayload): Promise<SaasCompany> {
+    return apiClient.post<SaasCompany>('/tenant/saas/companies', data);
+  },
+
+  async updateSaasCompany(id: string, data: UpdateSaasCompanyPayload): Promise<SaasCompany> {
+    return apiClient.put<SaasCompany>(`/tenant/saas/companies/${id}`, data);
+  },
+
+  async deleteSaasCompany(id: string): Promise<{ message: string }> {
+    return apiClient.delete<{ message: string }>(`/tenant/saas/companies/${id}`);
   },
 };
 
