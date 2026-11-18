@@ -28,6 +28,7 @@ import { tenantApiService, MyPageData, UpdateMyPagePayload } from '../services/a
 import { useAuthStore } from '../stores/authStore';
 import { useUIStore } from '../stores/uiStore';
 import { Button } from '../components/ui/Button';
+import { TimeSelect } from '../components/ui/TimeSelect';
 
 export default function MinhaPagina() {
   const { tenant, updateTenant } = useAuthStore();
@@ -735,24 +736,14 @@ export default function MinhaPagina() {
                 <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
                   Horário de Abertura Geral
                 </label>
-                <input
-                  type="time"
-                  value={openingTime}
-                  onChange={(e) => setOpeningTime(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
+                <TimeSelect value={openingTime} onChange={setOpeningTime} step={30} />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
                   Horário de Fechamento Geral
                 </label>
-                <input
-                  type="time"
-                  value={closingTime}
-                  onChange={(e) => setClosingTime(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
+                <TimeSelect value={closingTime} onChange={setClosingTime} step={30} />
               </div>
 
               <div>

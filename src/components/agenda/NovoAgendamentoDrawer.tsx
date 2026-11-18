@@ -10,6 +10,7 @@ import { Drawer } from '../ui/Drawer';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
+import { TimeSelect } from '../ui/TimeSelect';
 import { Calendar, Clock, User, Scissors, DollarSign, Plus, Check, MessageCircle, ShieldCheck } from 'lucide-react';
 import { formatCurrency } from '../../utils/format';
 import { maskPhone } from '../../utils/masks';
@@ -455,13 +456,9 @@ export function NovoAgendamentoDrawer() {
               Horário Início
             </label>
             <div className="flex items-center gap-2">
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full rounded-xl bg-zinc-50/80 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 text-sm px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400"
-                required
-              />
+              <div className="flex-1 min-w-0">
+                <TimeSelect value={startTime} onChange={setStartTime} step={15} required />
+              </div>
               <span className="text-xs text-zinc-400 font-medium">até</span>
               <div className="px-3 py-2.5 rounded-xl bg-violet-50/60 dark:bg-zinc-800/60 border border-violet-100 dark:border-zinc-700 text-xs font-bold text-violet-700 dark:text-zinc-300 shrink-0">
                 {endTime}

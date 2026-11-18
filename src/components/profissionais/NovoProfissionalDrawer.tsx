@@ -5,6 +5,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { Drawer } from '../ui/Drawer';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { TimeSelect } from '../ui/TimeSelect';
 import { Check, User, Phone, Mail, Percent, Sparkles, Lock, Eye, EyeOff, KeyRound } from 'lucide-react';
 
 export function NovoProfissionalDrawer() {
@@ -330,24 +331,14 @@ export function NovoProfissionalDrawer() {
             <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
               Horário de Início
             </label>
-            <input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full rounded-xl bg-zinc-50/80 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 text-sm px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400"
-            />
+            <TimeSelect value={startTime} onChange={setStartTime} step={30} />
           </div>
 
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
               Horário de Fim
             </label>
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full rounded-xl bg-zinc-50/80 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700/80 text-zinc-900 dark:text-zinc-100 text-sm px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400"
-            />
+            <TimeSelect value={endTime} onChange={setEndTime} step={30} />
           </div>
         </div>
 
@@ -382,23 +373,13 @@ export function NovoProfissionalDrawer() {
               <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
                 Início Almoço
               </label>
-              <input
-                type="time"
-                value={breakStart}
-                onChange={(e) => setBreakStart(e.target.value)}
-                className="w-full rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-xs p-2"
-              />
+              <TimeSelect value={breakStart} onChange={setBreakStart} step={15} size="sm" />
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
                 Fim Almoço
               </label>
-              <input
-                type="time"
-                value={breakEnd}
-                onChange={(e) => setBreakEnd(e.target.value)}
-                className="w-full rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-xs p-2"
-              />
+              <TimeSelect value={breakEnd} onChange={setBreakEnd} step={15} size="sm" />
             </div>
           </div>
 

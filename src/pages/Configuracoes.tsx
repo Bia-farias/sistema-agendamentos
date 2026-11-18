@@ -21,6 +21,7 @@ import { useFinancialStore } from '../stores/financialStore';
 import { useUIStore } from '../stores/uiStore';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { TimeSelect } from '../components/ui/TimeSelect';
 import { Badge } from '../components/ui/Badge';
 import { formatCurrency } from '../utils/format';
 
@@ -362,24 +363,14 @@ export default function Configuracoes() {
                 <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
                   Horário de Abertura *
                 </label>
-                <Input
-                  type="time"
-                  value={openingTime}
-                  onChange={(e) => setOpeningTime(e.target.value)}
-                  required
-                />
+                <TimeSelect value={openingTime} onChange={setOpeningTime} step={30} required />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
                   Horário de Fechamento *
                 </label>
-                <Input
-                  type="time"
-                  value={closingTime}
-                  onChange={(e) => setClosingTime(e.target.value)}
-                  required
-                />
+                <TimeSelect value={closingTime} onChange={setClosingTime} step={30} required />
               </div>
 
               <div className="space-y-1.5">
