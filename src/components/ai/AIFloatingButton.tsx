@@ -12,7 +12,7 @@ export function AIFloatingButton() {
     <div
       className={cn(
         'fixed bottom-24 right-4 sm:right-5 lg:bottom-8 lg:right-7 z-40 transition-opacity duration-200',
-        isOpen && 'hidden lg:block',
+        isOpen && 'hidden',
         !isOpen && isKeyboardOpen && 'opacity-0 pointer-events-none lg:opacity-100 lg:pointer-events-auto'
       )}
     >

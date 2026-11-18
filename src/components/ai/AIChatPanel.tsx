@@ -274,6 +274,7 @@ export function AIChatPanel() {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -286,6 +287,38 @@ export function AIChatPanel() {
       });
     }
   };
+
+  // Fecha com a tecla ESC ou clicando fora do painel
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeChat();
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      // Se o clique ocorreu fora do painel da IA, fecha automaticamente
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        closeChat();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    // Timeout para evitar que o clique no botão que abriu feche instantaneamente
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }, 50);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen, closeChat]);
 
   // Trava o scroll do body em dispositivos móveis quando o painel está aberto
   useEffect(() => {
@@ -352,16 +385,18 @@ export function AIChatPanel() {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop com fechamento ao clicar fora (mobile e desktop) */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1.5px] transition-opacity duration-300 animate-fade-in"
           onClick={closeChat}
+          aria-hidden="true"
         />
       )}
 
       {/* Chat Panel */}
       <div
+        ref={panelRef}
         className={`fixed right-0 left-0 sm:left-auto w-full sm:w-[420px] lg:w-[440px] max-w-full z-50 flex flex-col overflow-hidden bg-[#0f0f12] sm:border-l border-zinc-800/80 shadow-2xl shadow-black/60 transition-[transform,opacity,visibility] duration-300 ease-out ${
           isOpen
             ? 'translate-x-0 opacity-100 visible'
