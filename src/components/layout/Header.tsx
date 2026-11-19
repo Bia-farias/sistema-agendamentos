@@ -16,7 +16,7 @@ import { Drawer } from '../ui/Drawer';
 export function Header() {
   const { tenant, profile, logout } = useAuthStore();
   const { isDark, toggleTheme } = useThemeStore();
-  const { openNewAppointmentDrawer } = useAppointmentStore();
+  const { openNewAppointmentDrawer, appointments = [] } = useAppointmentStore();
   const { openNewCustomerDrawer } = useCustomerStore();
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -50,29 +50,25 @@ export function Header() {
     };
   }, [isQuickMenuOpen]);
 
-  const notifications = [
-    {
-      id: 'n1',
-      title: 'Novo Agendamento Confirmado',
-      description: 'Juliana Mendes confirmou Corte + Escova às 09:00.',
-      time: 'Há 10 minutos',
-      unread: true,
-    },
-    {
-      id: 'n2',
-      title: 'Lembrete de Retorno',
-      description: 'Larissa Vasconcelos completou 20 dias da última sessão de unhas.',
-      time: 'Há 1 hora',
-      unread: true,
-    },
-    {
-      id: 'n3',
-      title: 'Meta Diária Atingida! 🎯',
-      description: 'O faturamento de hoje ultrapassou R$ 1.000,00.',
-      time: 'Há 3 horas',
-      unread: false,
-    },
-  ];
+  // Notificações reais baseadas em agendamentos do sistema
+  const notifications = (appointments || [])
+    .slice(0, 5)
+    .map((apt) => ({
+      id: apt.id,
+      title:
+        apt.status === 'confirmed'
+          ? 'Agendamento Confirmado'
+          : apt.status === 'completed'
+          ? 'Atendimento Concluído'
+          : 'Novo Agendamento',
+      description: `${apt.customer_name || 'Cliente'} - ${apt.service_name || 'Serviço'}${
+        apt.start_time ? ` às ${apt.start_time.substring(0, 5)}` : ''
+      }${apt.professional_name ? ` com ${apt.professional_name}` : ''}.`,
+      time: apt.date || 'Hoje',
+      unread: apt.status === 'pending',
+    }));
+
+  const hasUnread = notifications.some((n) => n.unread);
 
   return (
     <>
@@ -117,7 +113,9 @@ export function Header() {
             aria-label="Notificações"
           >
             <Bell size={17} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-400 ring-2 ring-white dark:ring-[#13101e]" />
+            {hasUnread && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-400 ring-2 ring-white dark:ring-[#13101e]" />
+            )}
           </button>
 
           {/* User Avatar Menu Trigger */}
@@ -218,31 +216,47 @@ export function Header() {
         size="sm"
       >
         <div className="space-y-3">
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              className={`p-4 rounded-xl border transition-all ${
-                n.unread
-                  ? 'bg-violet-50/60 dark:bg-violet-500/5 border-violet-200/50 dark:border-violet-500/15'
-                  : 'bg-white dark:bg-white/5 border-zinc-100 dark:border-zinc-800/40'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <h4 className="font-bold text-xs text-zinc-800 dark:text-zinc-100">
-                  {n.title}
-                </h4>
-                {n.unread && (
-                  <span className="w-2 h-2 rounded-full bg-violet-400 shrink-0 mt-1" />
-                )}
+          {notifications.length === 0 ? (
+            <div className="text-center py-12 px-4 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-500/10 text-violet-400 flex items-center justify-center mx-auto shadow-sm">
+                <Bell size={22} />
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                {n.description}
-              </p>
-              <span className="text-[10px] text-zinc-400 mt-2 block font-medium">
-                {n.time}
-              </span>
+              <div>
+                <h4 className="font-bold text-sm text-zinc-800 dark:text-zinc-100">
+                  Nenhuma notificação recente
+                </h4>
+                <p className="text-xs text-zinc-400 mt-1 max-w-xs mx-auto leading-relaxed">
+                  Você será avisado aqui assim que novos agendamentos forem realizados.
+                </p>
+              </div>
             </div>
-          ))}
+          ) : (
+            notifications.map((n) => (
+              <div
+                key={n.id}
+                className={`p-4 rounded-xl border transition-all ${
+                  n.unread
+                    ? 'bg-violet-50/60 dark:bg-violet-500/5 border-violet-200/50 dark:border-violet-500/15'
+                    : 'bg-white dark:bg-white/5 border-zinc-100 dark:border-zinc-800/40'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="font-bold text-xs text-zinc-800 dark:text-zinc-100">
+                    {n.title}
+                  </h4>
+                  {n.unread && (
+                    <span className="w-2 h-2 rounded-full bg-violet-400 shrink-0 mt-1" />
+                  )}
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                  {n.description}
+                </p>
+                <span className="text-[10px] text-zinc-400 mt-2 block font-medium">
+                  {n.time}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       </Drawer>
     </>
