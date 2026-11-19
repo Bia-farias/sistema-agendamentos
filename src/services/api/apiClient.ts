@@ -74,7 +74,7 @@ async function request<T>(
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
 
   let response: Response;
   try {
@@ -86,12 +86,12 @@ async function request<T>(
   } catch (err: any) {
     if (err?.name === 'AbortError') {
       throw new ApiError(
-        'Tempo limite esgotado. O servidor backend não respondeu na porta 3001.',
+        'Tempo limite esgotado. O servidor está iniciando ou demorou para responder. Tente novamente em instantes.',
         0
       );
     }
     throw new ApiError(
-      'Não foi possível conectar ao servidor do Agenda AI (porta 3001). Certifique-se de que o terminal do backend está rodando.',
+      'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.',
       0
     );
   } finally {

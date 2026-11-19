@@ -116,61 +116,8 @@ export default function AgendamentoCliente() {
           closingTime: fallback.settings?.closing_time || '20:00',
           intervalMinutes: fallback.settings?.interval_minutes || 30,
           allowOnlineBooking: fallback.settings?.allow_online_booking ?? true,
-          services: [
-            { id: 'srv-1', name: 'Corte Feminino & Escova', category: 'Cabelo', price: 140, durationMinutes: 60, color: '#8b5cf6', description: 'Lavagem especial, corte estilizado e escova modeladora.' },
-            { id: 'srv-2', name: 'Corte Degradê Masculino', category: 'Barbearia', price: 80, durationMinutes: 45, color: '#06b6d4', description: 'Fade na navalha com acabamento e alinhamento de fios.' },
-            { id: 'srv-3', name: 'Mechas Criativas / Balayage', category: 'Cabelo', price: 480, durationMinutes: 180, color: '#ec4899', description: 'Técnica personalizada de iluminação com proteção Plex.' },
-            { id: 'srv-4', name: 'Alongamento em Gel (Unhas)', category: 'Unhas', price: 220, durationMinutes: 120, color: '#f59e0b', description: 'Alongamento em fibra de vidro com cutilagem e esmaltação em gel.' },
-            { id: 'srv-5', name: 'Limpeza de Pele Profunda', category: 'Estética', price: 180, durationMinutes: 90, color: '#10b981', description: 'Higienização, vapor de ozônio, extração de cravos e máscara LED.' },
-          ],
-          professionals: [
-            {
-              id: 'pro-1',
-              name: 'Camila Albuquerque',
-              role: 'Master Stylist & Visagista',
-              specialties: ['Corte Feminino', 'Mechas', 'Colorimetria'],
-              avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80',
-              color: '#ec4899',
-              bio: 'Mais de 10 anos de experiência com cortes modernos e mechas personalizadas. Apaixonada por realçar sua melhor versão.',
-              portfolioUrls: [
-                'https://images.unsplash.com/photo-1560869713-7d0a29430803?w=600&auto=format&fit=crop&q=80',
-                'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80',
-              ],
-              workingHoursStart: '09:00',
-              workingHoursEnd: '19:00',
-              workingDays: [1, 2, 3, 4, 5, 6],
-            },
-            {
-              id: 'pro-2',
-              name: 'Lucas Ferreira',
-              role: 'Barbeiro Visagista & Terapeuta Capilar',
-              specialties: ['Barba', 'Corte Degradê', 'Terapia Capilar'],
-              avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-              color: '#06b6d4',
-              bio: 'Especialista em cortes masculinos clássicos e visagismo. Experiência em barboterapia e tratamentos de couro cabeludo.',
-              portfolioUrls: [
-                'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&auto=format&fit=crop&q=80',
-              ],
-              workingHoursStart: '09:00',
-              workingHoursEnd: '19:00',
-              workingDays: [1, 2, 3, 4, 5, 6],
-            },
-            {
-              id: 'pro-3',
-              name: 'Beatriz Lima',
-              role: 'Nail Designer & Podóloga',
-              specialties: ['Alongamento Gel', 'Esmaltação em Gel', 'Podologia'],
-              avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
-              color: '#f59e0b',
-              bio: 'Cuidado e perfeccionismo para a saúde e beleza das suas unhas. Técnicas avançadas de biossegurança.',
-              portfolioUrls: [
-                'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&auto=format&fit=crop&q=80',
-              ],
-              workingHoursStart: '09:00',
-              workingHoursEnd: '19:00',
-              workingDays: [1, 2, 3, 4, 5, 6],
-            },
-          ],
+          services: [],
+          professionals: [],
         });
       } finally {
         setIsLoadingSalon(false);
@@ -553,118 +500,145 @@ export default function AgendamentoCliente() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {/* Opção Qualquer Profissional */}
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProfessional(null);
-                  setIsAnyProfessional(true);
-                  setStep(2);
-                }}
-                className={`p-5 rounded-3xl border text-left transition-all hover:scale-[1.02] cursor-pointer relative ${
-                  isAnyProfessional
-                    ? 'border-violet-500 bg-violet-50/50 dark:bg-violet-950/20 shadow-md ring-2 ring-violet-500'
-                    : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121216] hover:border-zinc-300'
-                }`}
-              >
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-500 to-indigo-500 text-white flex items-center justify-center font-bold shadow-md mb-3">
-                  <Sparkles size={24} />
+            {salon.professionals.length === 0 ? (
+              <div className="text-center py-12 px-6 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121216] space-y-3">
+                <div className="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 flex items-center justify-center mx-auto shadow-sm">
+                  <User size={24} />
                 </div>
-                <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-50">
-                  Qualquer Especialista
-                </h4>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
-                  Encontraremos o horário mais próximo disponível entre nossa equipe.
+                <h3 className="font-extrabold text-base text-zinc-900 dark:text-zinc-100">
+                  Nenhum profissional disponível
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
+                  Este estabelecimento ainda não cadastrou profissionais para atendimento online.
                 </p>
-              </button>
-
-              {/* Cards Individuais dos Profissionais */}
-              {salon.professionals.map((prof) => (
-                <div
-                  key={prof.id}
-                  className={`p-5 rounded-3xl border transition-all relative flex flex-col justify-between ${
-                    selectedProfessional?.id === prof.id && !isAnyProfessional
+                {salon.whatsapp && (
+                  <div className="pt-2">
+                    <a
+                      href={`https://wa.me/55${salon.whatsapp.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md"
+                    >
+                      <MessageCircle size={15} />
+                      <span>Agendar pelo WhatsApp</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {/* Opção Qualquer Profissional */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProfessional(null);
+                    setIsAnyProfessional(true);
+                    setStep(2);
+                  }}
+                  className={`p-5 rounded-3xl border text-left transition-all hover:scale-[1.02] cursor-pointer relative ${
+                    isAnyProfessional
                       ? 'border-violet-500 bg-violet-50/50 dark:bg-violet-950/20 shadow-md ring-2 ring-violet-500'
-                      : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121216]'
+                      : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121216] hover:border-zinc-300'
                   }`}
                 >
-                  <div>
-                    <div className="flex items-center gap-3.5 mb-3">
-                      <div className="w-14 h-14 rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 shrink-0 shadow-sm border border-zinc-200 dark:border-zinc-700">
-                        {prof.avatarUrl ? (
-                          <img
-                            src={prof.avatarUrl}
-                            alt={prof.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div
-                            className="w-full h-full flex items-center justify-center text-white font-bold text-lg"
-                            style={{ backgroundColor: prof.color || themeColor }}
-                          >
-                            {prof.name.substring(0, 1)}
-                          </div>
-                        )}
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-500 to-indigo-500 text-white flex items-center justify-center font-bold shadow-md mb-3">
+                    <Sparkles size={24} />
+                  </div>
+                  <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-50">
+                    Qualquer Especialista
+                  </h4>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+                    Encontraremos o horário mais próximo disponível entre nossa equipe.
+                  </p>
+                </button>
+
+                {/* Cards Individuais dos Profissionais */}
+                {salon.professionals.map((prof) => (
+                  <div
+                    key={prof.id}
+                    className={`p-5 rounded-3xl border transition-all relative flex flex-col justify-between ${
+                      selectedProfessional?.id === prof.id && !isAnyProfessional
+                        ? 'border-violet-500 bg-violet-50/50 dark:bg-violet-950/20 shadow-md ring-2 ring-violet-500'
+                        : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121216]'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-3.5 mb-3">
+                        <div className="w-14 h-14 rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 shrink-0 shadow-sm border border-zinc-200 dark:border-zinc-700">
+                          {prof.avatarUrl ? (
+                            <img
+                              src={prof.avatarUrl}
+                              alt={prof.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div
+                              className="w-full h-full flex items-center justify-center text-white font-bold text-lg"
+                              style={{ backgroundColor: prof.color || themeColor }}
+                            >
+                              {prof.name.substring(0, 1)}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-50">
+                            {prof.name}
+                          </h4>
+                          <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400">
+                            {prof.role}
+                          </span>
+                        </div>
                       </div>
 
-                      <div>
-                        <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-50">
-                          {prof.name}
-                        </h4>
-                        <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400">
-                          {prof.role}
-                        </span>
-                      </div>
+                      {prof.bio && (
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">
+                          {prof.bio}
+                        </p>
+                      )}
+
+                      {prof.specialties && prof.specialties.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {prof.specialties.slice(0, 3).map((spec, i) => (
+                            <span
+                              key={i}
+                              className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
+                            >
+                              {spec}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    {prof.bio && (
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">
-                        {prof.bio}
-                      </p>
-                    )}
+                    <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
+                      {prof.portfolioUrls && prof.portfolioUrls.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setPortfolioModalProf(prof)}
+                          className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                        >
+                          Ver Trabalhos
+                        </button>
+                      )}
 
-                    {prof.specialties && prof.specialties.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {prof.specialties.slice(0, 3).map((spec, i) => (
-                          <span
-                            key={i}
-                            className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
-                          >
-                            {spec}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
-                    {prof.portfolioUrls && prof.portfolioUrls.length > 0 && (
                       <button
                         type="button"
-                        onClick={() => setPortfolioModalProf(prof)}
-                        className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                        onClick={() => {
+                          setSelectedProfessional(prof);
+                          setIsAnyProfessional(false);
+                          setStep(2);
+                        }}
+                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-white shadow-xs transition-all hover:scale-102 cursor-pointer text-center"
+                        style={{ backgroundColor: themeColor }}
                       >
-                        Ver Trabalhos
+                        Selecionar
                       </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedProfessional(prof);
-                        setIsAnyProfessional(false);
-                        setStep(2);
-                      }}
-                      className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-white shadow-xs transition-all hover:scale-102 cursor-pointer text-center"
-                      style={{ backgroundColor: themeColor }}
-                    >
-                      Selecionar
-                    </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -716,52 +690,64 @@ export default function AgendamentoCliente() {
             </div>
 
             {/* Lista de Serviços */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {filteredServices.map((service) => (
-                <div
-                  key={service.id}
-                  onClick={() => {
-                    setSelectedService(service);
-                    setStep(3);
-                  }}
-                  className={`p-5 rounded-3xl border transition-all hover:scale-[1.01] cursor-pointer flex flex-col justify-between ${
-                    selectedService?.id === service.id
-                      ? 'border-violet-500 bg-violet-50/50 dark:bg-violet-950/20 shadow-md ring-2 ring-violet-500'
-                      : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121216] hover:border-zinc-300'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-violet-600 dark:text-violet-400">
-                        {service.category}
-                      </span>
-                      <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-50">
-                        {service.name}
-                      </h4>
-                      {service.description && (
-                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2">
-                          {service.description}
-                        </p>
-                      )}
+            {filteredServices.length === 0 ? (
+              <div className="text-center py-12 px-6 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121216] space-y-2">
+                <Scissors size={24} className="mx-auto text-zinc-400" />
+                <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">
+                  Nenhum serviço disponível no momento
+                </h4>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Este estabelecimento ainda não cadastrou serviços para agendamento online.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {filteredServices.map((service) => (
+                  <div
+                    key={service.id}
+                    onClick={() => {
+                      setSelectedService(service);
+                      setStep(3);
+                    }}
+                    className={`p-5 rounded-3xl border transition-all hover:scale-[1.01] cursor-pointer flex flex-col justify-between ${
+                      selectedService?.id === service.id
+                        ? 'border-violet-500 bg-violet-50/50 dark:bg-violet-950/20 shadow-md ring-2 ring-violet-500'
+                        : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#121216] hover:border-zinc-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                          {service.category}
+                        </span>
+                        <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-50">
+                          {service.name}
+                        </h4>
+                        {service.description && (
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2">
+                            {service.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="text-base font-black text-zinc-900 dark:text-zinc-50">
+                          {formatCurrency(service.price)}
+                        </span>
+                        <span className="block text-[11px] font-medium text-zinc-400">
+                          {service.durationMinutes} min
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <span className="text-base font-black text-zinc-900 dark:text-zinc-50">
-                        {formatCurrency(service.price)}
-                      </span>
-                      <span className="block text-[11px] font-medium text-zinc-400">
-                        {service.durationMinutes} min
-                      </span>
+                    <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-xs font-bold text-violet-600 dark:text-violet-400">
+                      <span>Selecionar este serviço</span>
+                      <ArrowRight size={15} />
                     </div>
                   </div>
-
-                  <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-xs font-bold text-violet-600 dark:text-violet-400">
-                    <span>Selecionar este serviço</span>
-                    <ArrowRight size={15} />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
