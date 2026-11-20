@@ -96,7 +96,7 @@ export default function Clientes() {
     if (targetApt) {
       openWhatsAppForAppointment(
         targetApt,
-        tenant?.name || 'Studio Prime',
+        tenant?.name || 'Sua Empresa',
         targetApt.status === 'confirmed' ? 'confirmation' : 'reminder'
       );
       addToast({
@@ -105,7 +105,7 @@ export default function Clientes() {
         message: `Redirecionando com os dados do agendamento de ${customer.name}...`,
       });
     } else {
-      const message = generateReactivationMessage(customer, tenant?.name || 'Studio Prime');
+      const message = generateReactivationMessage(customer, tenant?.name || 'Sua Empresa');
       const link = createWhatsAppLink(customer.phone, message);
       window.open(link, '_blank', 'noopener,noreferrer');
       addToast({

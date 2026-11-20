@@ -172,7 +172,7 @@ export function CalendarioSemanal({
                                   e.stopPropagation();
                                   openWhatsAppForAppointment(
                                     apt,
-                                    tenant?.name || 'Studio Prime',
+                                    tenant?.name || 'Sua Empresa',
                                     apt.status === 'confirmed' ? 'confirmation' : 'reminder'
                                   );
                                   addToast({

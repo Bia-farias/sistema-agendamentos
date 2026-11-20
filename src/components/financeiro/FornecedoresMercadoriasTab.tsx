@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useFinancialStore } from '../../stores/financialStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
 import { formatCurrency, formatDate, formatPhone } from '../../utils/format';
 import { createWhatsAppLink } from '../../services/whatsapp';
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react';
 
 export function FornecedoresMercadoriasTab() {
+  const { tenant } = useAuthStore();
   const {
     suppliers,
     merchandise,
@@ -65,7 +67,7 @@ export function FornecedoresMercadoriasTab() {
   const lowStockCount = merchandise.filter((m) => m.quantity <= m.min_quantity).length;
 
   const handleCallSupplierWhatsApp = (phone: string, supplierName: string) => {
-    const msg = `Olá, equipe da *${supplierName}*! Tudo bem? 👋\n\nAqui é do salão/clínica *Studio Prime*. Gostaríamos de solicitar uma cotação e novo pedido de reposição de mercadorias. Poderiam nos atender? ✨`;
+    const msg = `Olá, equipe da *${supplierName}*! Tudo bem? 👋\n\nAqui é do salão/clínica *${tenant?.name || 'nosso estabelecimento'}*. Gostaríamos de solicitar uma cotação e novo pedido de reposição de mercadorias. Poderiam nos atender? ✨`;
     const link = createWhatsAppLink(phone, msg);
     window.open(link, '_blank', 'noopener,noreferrer');
   };

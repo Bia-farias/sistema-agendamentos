@@ -6,6 +6,7 @@ import {
   WhatsAppConnectionInfo,
 } from '../types';
 import { whatsappApiService } from '../services/api/whatsappService';
+import { useAuthStore } from './authStore';
 
 interface WhatsAppState {
   connection: WhatsAppConnectionInfo;
@@ -344,9 +345,10 @@ export const useWhatsAppStore = create<WhatsAppState>((set, get) => ({
     const template = templates.find((t) => t.id === templateId) || templates[4];
 
     customerNames.forEach((name) => {
+      const tenantName = useAuthStore.getState().tenant?.name || 'Sua Empresa';
       const personalized = template.content
         .replace(/{cliente_nome}/g, name)
-        .replace(/{empresa}/g, 'Studio Prime & Estética');
+        .replace(/{empresa}/g, tenantName);
 
       sendMessage(name, '11988887777', personalized, template.name);
     });

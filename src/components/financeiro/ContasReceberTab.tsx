@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useFinancialStore } from '../../stores/financialStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
 import { formatCurrency, formatDate, formatPhone } from '../../utils/format';
 import { createWhatsAppLink } from '../../services/whatsapp';
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react';
 
 export function ContasReceberTab() {
+  const { tenant } = useAuthStore();
   const { receivables, markReceivablePaid, deleteReceivable } = useFinancialStore();
   const { addToast } = useUIStore();
 
@@ -81,7 +83,7 @@ export function ContasReceberTab() {
 
   const handleCobrarWhatsApp = (r: Receivable) => {
     let msg = `Olá, *${r.customer_name}*! Tudo bem? 👋\n\n`;
-    msg += `Estamos passando com um lembrete sobre o pagamento do seu atendimento no *Studio Prime*:\n\n`;
+    msg += `Estamos passando com um lembrete sobre o pagamento do seu atendimento no *${tenant?.name || 'nosso estabelecimento'}*:\n\n`;
     if (r.service_name) msg += `✂️ *Serviço:* ${r.service_name}\n`;
     if (r.professional_name) msg += `👤 *Profissional:* ${r.professional_name}\n`;
     msg += `🗓 *Vencimento:* ${formatDate(r.due_date)}\n`;

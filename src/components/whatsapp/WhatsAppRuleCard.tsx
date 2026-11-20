@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { WhatsAppReminderRule, WhatsAppTemplate } from '../../types';
 import { useWhatsAppStore } from '../../stores/whatsappStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
 import { cn } from '../../utils/cn';
 
@@ -33,6 +34,7 @@ export function WhatsAppRuleCard({
   template,
   onSelectTemplate,
 }: WhatsAppRuleCardProps) {
+  const { tenant } = useAuthStore();
   const { toggleRule, sendMessage } = useWhatsAppStore();
   const { addToast } = useUIStore();
 
@@ -52,11 +54,11 @@ export function WhatsAppRuleCard({
     if (!template) return;
     const testMsg = template.content
       .replace(/{cliente_nome}/g, 'Cliente Teste')
-      .replace(/{empresa}/g, 'Studio Prime & Estética')
+      .replace(/{empresa}/g, tenant?.name || 'Sua Empresa')
       .replace(/{data}/g, 'Hoje')
       .replace(/{horario}/g, '14:30')
       .replace(/{servico}/g, 'Corte & Escova')
-      .replace(/{profissional}/g, 'Lucas Ferreira');
+      .replace(/{profissional}/g, 'Profissional Teste');
 
     sendMessage('Cliente Teste (Disparo Manual)', '11988887777', testMsg, template.name);
 

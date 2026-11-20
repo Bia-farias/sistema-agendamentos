@@ -12,12 +12,14 @@ import {
 } from 'lucide-react';
 import { useCustomerStore } from '../../stores/customerStore';
 import { useWhatsAppStore } from '../../stores/whatsappStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
 import { Button } from '../ui/Button';
 import { WhatsAppBubblePreview } from './WhatsAppBubblePreview';
 import { cn } from '../../utils/cn';
 
 export function WhatsAppReactivationTab() {
+  const { tenant } = useAuthStore();
   const { customers } = useCustomerStore();
   const { templates, runReactivation, openWhatsAppWeb } = useWhatsAppStore();
   const { addToast } = useUIStore();
@@ -86,7 +88,7 @@ export function WhatsAppReactivationTab() {
   const handleDirectWhatsApp = (customer: (typeof customers)[0]) => {
     const personalized = recoveryTemplate.content
       .replace(/{cliente_nome}/g, customer.name.split(' ')[0])
-      .replace(/{empresa}/g, 'Studio Prime & Estética');
+      .replace(/{empresa}/g, tenant?.name || 'Sua Empresa');
 
     openWhatsAppWeb(customer.phone, personalized);
     addToast({
@@ -256,8 +258,8 @@ export function WhatsAppReactivationTab() {
             content={recoveryTemplate.content}
             templateName={recoveryTemplate.name}
             sampleData={{
-              cliente_nome: 'Juliana Mendes',
-              empresa: 'Studio Prime & Estética',
+              cliente_nome: 'Cliente',
+              empresa: tenant?.name || 'Sua Empresa',
             }}
           />
         </div>

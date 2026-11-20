@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCheck, Smartphone, Eye, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAuthStore } from '../../stores/authStore';
 
 interface WhatsAppBubblePreviewProps {
   content: string;
@@ -18,27 +19,30 @@ interface WhatsAppBubblePreviewProps {
 export function WhatsAppBubblePreview({
   content,
   templateName = 'Modelo de Mensagem',
-  sampleData = {
-    cliente_nome: 'Mariana Costa',
-    empresa: 'Studio Prime & Estética',
-    data: '10/09/2026',
-    horario: '15:30',
-    servico: 'Mechas Loiro Glow + Nutrição',
-    profissional: 'Lucas Ferreira',
-  },
+  sampleData,
 }: WhatsAppBubblePreviewProps) {
+  const { tenant } = useAuthStore();
   const [showSampleData, setShowSampleData] = useState(true);
+
+  const effectiveSampleData = {
+    cliente_nome: sampleData?.cliente_nome || 'Cliente',
+    empresa: sampleData?.empresa || tenant?.name || 'Sua Empresa',
+    data: sampleData?.data || '10/09/2026',
+    horario: sampleData?.horario || '15:30',
+    servico: sampleData?.servico || 'Corte & Escova',
+    profissional: sampleData?.profissional || 'Profissional',
+  };
 
   // Replace tags with sample data if toggle is on
   let displayContent = content;
   if (showSampleData) {
     displayContent = displayContent
-      .replace(/{cliente_nome}/g, sampleData.cliente_nome || 'Cliente')
-      .replace(/{empresa}/g, sampleData.empresa || 'Nosso Estabelecimento')
-      .replace(/{data}/g, sampleData.data || '10/09')
-      .replace(/{horario}/g, sampleData.horario || '14:00')
-      .replace(/{servico}/g, sampleData.servico || 'Serviço')
-      .replace(/{profissional}/g, sampleData.profissional || 'Profissional');
+      .replace(/{cliente_nome}/g, effectiveSampleData.cliente_nome)
+      .replace(/{empresa}/g, effectiveSampleData.empresa)
+      .replace(/{data}/g, effectiveSampleData.data)
+      .replace(/{horario}/g, effectiveSampleData.horario)
+      .replace(/{servico}/g, effectiveSampleData.servico)
+      .replace(/{profissional}/g, effectiveSampleData.profissional);
   }
 
   // Format WhatsApp markdown: *bold* -> <strong>, _italic_ -> <em>
@@ -71,10 +75,12 @@ export function WhatsAppBubblePreview({
       <div className="bg-[#128C7E] dark:bg-[#075E54] text-white px-3 py-2.5 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-white/30">
-            SP
+            {tenant?.name ? tenant.name.substring(0, 2).toUpperCase() : 'AI'}
           </div>
           <div className="truncate">
-            <p className="text-xs font-bold leading-tight truncate">Studio Prime & Estética</p>
+            <p className="text-xs font-bold leading-tight truncate">
+              {tenant?.name || 'Sua Empresa'}
+            </p>
             <p className="text-[10px] text-emerald-100/80 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
               Online • WhatsApp Business

@@ -268,7 +268,7 @@ export function NovoAgendamentoDrawer() {
       if (sendWhatsAppOnCreate && createdApt) {
         openWhatsAppForAppointment(
           createdApt,
-          tenant?.name || 'Studio Prime',
+          tenant?.name || 'Sua Empresa',
           'confirmation'
         );
       }

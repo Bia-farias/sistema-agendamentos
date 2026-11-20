@@ -45,7 +45,7 @@ export function createWhatsAppLink(phone: string, message: string): string {
  */
 export function generateAppointmentConfirmationMessage(
   appointment: Appointment,
-  tenantName: string = 'Studio Prime'
+  tenantName: string = 'Sua Empresa'
 ): string {
   const dateFormatted = formatDateWithWeekday(appointment.date);
   const paymentLabels: Record<string, string> = {
@@ -86,7 +86,7 @@ export function generateAppointmentConfirmationMessage(
  */
 export function generateAppointmentReminderMessage(
   appointment: Appointment,
-  tenantName: string = 'Studio Prime'
+  tenantName: string = 'Sua Empresa'
 ): string {
   const dateFormatted = formatDateWithWeekday(appointment.date);
 
@@ -115,7 +115,7 @@ export function generateAppointmentReminderMessage(
  */
 export function generateAppointmentDetailsMessage(
   appointment: Appointment,
-  tenantName: string = 'Studio Prime'
+  tenantName: string = 'Sua Empresa'
 ): string {
   const dateFormatted = formatDateWithWeekday(appointment.date);
   const paymentLabels: Record<string, string> = {
@@ -154,7 +154,7 @@ export function generateAppointmentDetailsMessage(
  */
 export function generateReactivationMessage(
   customer: Customer,
-  tenantName: string = 'Studio Prime',
+  tenantName: string = 'Sua Empresa',
   lastAppointment?: Appointment
 ): string {
   if (lastAppointment) {
@@ -169,7 +169,7 @@ export function generateReactivationMessage(
  */
 export function openWhatsAppForAppointment(
   appointment: Appointment,
-  tenantName: string = 'Studio Prime',
+  tenantName: string = 'Sua Empresa',
   type: 'confirmation' | 'reminder' | 'details' = 'confirmation'
 ): string {
   let message = '';

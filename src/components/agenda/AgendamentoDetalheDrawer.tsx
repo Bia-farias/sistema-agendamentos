@@ -179,7 +179,7 @@ export function AgendamentoDetalheDrawer() {
   };
 
   const handleSendWhatsApp = (type: 'confirmation' | 'reminder' | 'details' = 'confirmation') => {
-    openWhatsAppForAppointment(appointment, tenant?.name || 'Studio Prime', type);
+    openWhatsAppForAppointment(appointment, tenant?.name || 'Sua Empresa', type);
     addToast({
       type: 'success',
       title: 'WhatsApp Aberto',
