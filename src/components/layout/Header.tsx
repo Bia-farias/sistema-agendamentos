@@ -12,6 +12,7 @@ import { useThemeStore } from '../../stores/themeStore';
 import { useAppointmentStore } from '../../stores/appointmentStore';
 import { useCustomerStore } from '../../stores/customerStore';
 import { Drawer } from '../ui/Drawer';
+import { GlobalSearchModal } from './GlobalSearchModal';
 
 export function Header() {
   const { tenant, profile, logout } = useAuthStore();
@@ -20,6 +21,7 @@ export function Header() {
   const { openNewCustomerDrawer } = useCustomerStore();
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
   const quickMenuRef = useRef<HTMLDivElement>(null);
 
@@ -49,6 +51,18 @@ export function Header() {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isQuickMenuOpen]);
+
+  // Atalho global Ctrl+K / Cmd+K para abrir busca rápida
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   // Notificações reais baseadas em agendamentos do sistema
   const notifications = (appointments || [])
@@ -84,17 +98,34 @@ export function Header() {
             </span>
           </div>
 
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-violet-50/60 dark:bg-violet-500/5 border border-violet-100/80 dark:border-violet-800/30 text-xs text-zinc-400 w-64 lg:w-80 transition-all hover:border-violet-200/80 hover:bg-violet-50 dark:hover:bg-violet-500/10 cursor-pointer">
-            <Search size={13} className="shrink-0 text-violet-300 dark:text-violet-500" />
-            <span className="truncate">Buscar clientes, horários ou serviços...</span>
-            <kbd className="hidden lg:inline-block ml-auto text-[10px] bg-white dark:bg-violet-500/10 border border-violet-100 dark:border-violet-700/30 px-1.5 py-0.5 rounded text-violet-400 font-mono shadow-sm">
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-violet-50/60 dark:bg-violet-500/5 border border-violet-100/80 dark:border-violet-800/30 text-xs text-zinc-400 w-64 lg:w-80 transition-all hover:border-violet-300 dark:hover:border-violet-600/50 hover:bg-violet-50 dark:hover:bg-violet-500/10 cursor-pointer text-left group"
+            title="Buscar clientes, horários ou serviços (Ctrl+K)"
+          >
+            <Search size={13} className="shrink-0 text-violet-400 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors" />
+            <span className="truncate group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors">
+              Buscar clientes, horários ou serviços...
+            </span>
+            <kbd className="hidden lg:inline-block ml-auto text-[10px] bg-white dark:bg-violet-500/10 border border-violet-100 dark:border-violet-700/30 px-1.5 py-0.5 rounded text-violet-500 font-mono shadow-xs font-semibold">
               Ctrl K
             </kbd>
-          </div>
+          </button>
         </div>
 
         {/* Right Side: Theme Toggle, Notifications, Profile */}
         <div className="flex items-center gap-2">
+          {/* Mobile Search Button */}
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="md:hidden p-2 rounded-xl text-zinc-400 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-all duration-150 cursor-pointer"
+            title="Pesquisar (Ctrl+K)"
+            aria-label="Pesquisar"
+          >
+            <Search size={17} />
+          </button>
+
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
@@ -259,6 +290,9 @@ export function Header() {
           )}
         </div>
       </Drawer>
+
+      {/* Global Search / Command Palette Modal */}
+      <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );
 }
