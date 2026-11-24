@@ -69,5 +69,15 @@ export const tenantController = {
       return next(error);
     }
   },
+
+  async impersonateSaasCompany(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await tenantService.impersonateSaasCompany(id);
+      return sendSuccess(res, result, 200);
+    } catch (error) {
+      return next(error);
+    }
+  },
 };
 

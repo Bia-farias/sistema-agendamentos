@@ -1,6 +1,7 @@
 import { prisma } from '../database/prisma.js';
 import { AppError } from '../utils/appError.js';
 import { hashPassword } from '../utils/password.js';
+import { generateToken } from '../utils/jwt.js';
 import {
   UpdateMyPageInput,
   CreateSaasCompanyInput,
@@ -417,6 +418,87 @@ export const tenantService = {
     });
 
     return { message: 'Empresa e seus acessos removidos com sucesso.' };
+  },
+
+  /**
+   * [SAAS OWNER] Gera token de acesso direto (impersonação) para o Administrador de uma empresa
+   */
+  async impersonateSaasCompany(tenantId: string) {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        users: {
+          orderBy: [
+            { isActive: 'desc' },
+            { createdAt: 'asc' },
+          ],
+        },
+      },
+    });
+
+    if (!tenant) {
+      throw new AppError('Empresa não encontrada', 404);
+    }
+
+    // Busca o usuário admin ou proprietário ativo da empresa
+    let targetUser =
+      tenant.users.find((u) => u.isActive && (u.role === 'ADMIN' || u.role === 'OWNER')) ||
+      tenant.users.find((u) => u.isActive) ||
+      tenant.users[0];
+
+    // Se a empresa ainda não tiver usuário criado, gera um perfil ADMIN automaticamente
+    if (!targetUser) {
+      const defaultPassword = await hashPassword('Admin@1234');
+      targetUser = await prisma.user.create({
+        data: {
+          tenantId: tenant.id,
+          fullName: `Admin ${tenant.name}`,
+          email: tenant.email || `admin@${tenant.slug}.com`,
+          password: defaultPassword,
+          role: 'ADMIN',
+          isActive: true,
+        },
+      });
+    }
+
+    const token = generateToken({
+      userId: targetUser.id,
+      tenantId: tenant.id,
+      role: targetUser.role,
+      email: targetUser.email,
+    });
+
+    return {
+      user: {
+        id: targetUser.id,
+        fullName: targetUser.fullName,
+        email: targetUser.email,
+        role: targetUser.role,
+        phone: targetUser.phone,
+        avatarUrl: targetUser.avatarUrl,
+        tenantId: tenant.id,
+        createdAt: targetUser.createdAt,
+      },
+      tenant: {
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+        plan: tenant.plan,
+        businessType: tenant.businessType,
+        phone: tenant.phone,
+        email: tenant.email,
+        address: tenant.address,
+        logoUrl: tenant.logoUrl,
+        settings: {
+          opening_time: tenant.openingTime,
+          closing_time: tenant.closingTime,
+          interval_minutes: tenant.intervalMinutes,
+          allow_online_booking: tenant.allowOnlineBooking,
+        },
+        createdAt: tenant.createdAt,
+      },
+      token,
+    };
   },
 };
 

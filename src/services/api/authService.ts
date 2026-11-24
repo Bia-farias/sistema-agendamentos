@@ -1,7 +1,7 @@
 import { apiClient, setAuthToken, ApiError } from './apiClient';
 import { Profile, Tenant, UserRole } from '../../types';
 
-interface BackendAuthResponse {
+export interface BackendAuthResponse {
   user: {
     id: string;
     fullName: string;
@@ -33,14 +33,14 @@ interface BackendAuthResponse {
   token: string;
 }
 
-function safeIsoDate(val?: string | Date | null): string {
+export function safeIsoDate(val?: string | Date | null): string {
   if (!val) return new Date().toISOString();
   if (typeof val === 'string') return val;
   const d = new Date(val);
   return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
 }
 
-function mapBackendAuthData(data: { user: BackendAuthResponse['user']; tenant: BackendAuthResponse['tenant'] }): {
+export function mapBackendAuthData(data: { user: BackendAuthResponse['user']; tenant: BackendAuthResponse['tenant'] }): {
   profile: Profile;
   tenant: Tenant;
 } {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Calendar,
@@ -15,6 +15,7 @@ import {
   Settings,
   Globe,
   Building2,
+  ArrowLeft,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -23,9 +24,21 @@ import { cn } from '../../utils/cn';
 
 export function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
-  const { tenant, profile, logout } = useAuthStore();
+  const { addToast } = useUIStore();
+  const { tenant, profile, logout, isImpersonating, exitImpersonation } = useAuthStore();
   const { openChat } = useAIChatStore();
+
+  const handleExitImpersonation = () => {
+    exitImpersonation();
+    addToast({
+      type: 'info',
+      title: 'Sessão Master Restaurada',
+      message: 'Você retornou ao Painel de Controle Master SaaS.',
+    });
+    navigate('/empresas');
+  };
 
   interface NavItem {
     label: string;
@@ -205,6 +218,39 @@ export function Sidebar() {
           </p>
         </div>
       ) : null}
+
+      {/* Botão de Retorno do Modo Master SaaS */}
+      {isImpersonating && (
+        <div className="p-2.5 mx-2.5 mb-2 rounded-xl bg-violet-600/10 border border-violet-500/30 text-violet-700 dark:text-violet-300">
+          {isSidebarOpen ? (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 text-violet-700 dark:text-violet-300">
+                <Building2 size={12} /> Acesso Master Ativo
+              </p>
+              <button
+                type="button"
+                onClick={handleExitImpersonation}
+                className="w-full py-1.5 px-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                title="Voltar para a gestão de empresas Master"
+              >
+                <ArrowLeft size={13} />
+                <span>Voltar ao Master</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={handleExitImpersonation}
+                className="p-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition-colors cursor-pointer shadow-xs"
+                title="Voltar ao Painel Master SaaS"
+              >
+                <ArrowLeft size={15} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Footer User Profile & Logout */}
       <div className="p-3 border-t border-violet-100/60 dark:border-violet-900/20 bg-violet-50/30 dark:bg-violet-500/5">

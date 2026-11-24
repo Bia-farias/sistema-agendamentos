@@ -1,5 +1,6 @@
 import { apiClient } from './apiClient';
-import { SaasCompany } from '../../types';
+import { SaasCompany, Profile, Tenant } from '../../types';
+import { BackendAuthResponse, mapBackendAuthData } from './authService';
 
 export interface CreateSaasCompanyPayload {
   name: string;
@@ -93,6 +94,22 @@ export const tenantApiService = {
 
   async deleteSaasCompany(id: string): Promise<{ message: string }> {
     return apiClient.delete<{ message: string }>(`/tenant/saas/companies/${id}`);
+  },
+
+  async impersonateCompany(id: string): Promise<{
+    user: { id: string; email: string };
+    profile: Profile;
+    tenant: Tenant;
+    token: string;
+  }> {
+    const res = await apiClient.post<BackendAuthResponse>(`/tenant/saas/companies/${id}/impersonate`, {});
+    const { profile, tenant } = mapBackendAuthData(res);
+    return {
+      user: { id: res.user.id, email: res.user.email },
+      profile,
+      tenant,
+      token: res.token,
+    };
   },
 };
 

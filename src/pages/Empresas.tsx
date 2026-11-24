@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Building2,
   Plus,
@@ -21,10 +22,12 @@ import {
   Trash2,
   Sparkles,
   Power,
+  LogIn,
 } from 'lucide-react';
 import { SaasCompany } from '../types';
 import { tenantApiService } from '../services/api/tenantService';
 import { useUIStore } from '../stores/uiStore';
+import { useAuthStore } from '../stores/authStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -51,13 +54,16 @@ const PLAN_LABELS: Record<string, { label: string; color: 'primary' | 'success' 
 };
 
 export default function Empresas() {
+  const navigate = useNavigate();
   const { addToast } = useUIStore();
+  const { impersonateCompany } = useAuthStore();
 
   const [companies, setCompanies] = useState<SaasCompany[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended'>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
 
   // Drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -132,6 +138,35 @@ export default function Empresas() {
       message: `O e-mail "${email}" foi copiado para a área de transferência.`,
     });
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleImpersonateCompany = async (company: SaasCompany) => {
+    try {
+      setImpersonatingId(company.id);
+      const res = await impersonateCompany(company.id);
+      if (res.success) {
+        addToast({
+          type: 'success',
+          title: 'Acesso Liberado!',
+          message: `Conectado como Administrador de "${company.name}".`,
+        });
+        navigate('/dashboard');
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Falha no Acesso',
+          message: res.message || 'Não foi possível acessar a conta da empresa.',
+        });
+      }
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Erro de Conexão',
+        message: err?.message || 'Falha ao acessar o painel da empresa.',
+      });
+    } finally {
+      setImpersonatingId(null);
+    }
   };
 
   const handleGeneratePassword = () => {
@@ -500,6 +535,23 @@ export default function Empresas() {
                     <Badge variant={company.isActive ? 'success' : 'danger'} size="sm">
                       {company.isActive ? 'Ativa' : 'Suspensa'}
                     </Badge>
+                    <Button
+                      size="xs"
+                      variant="primary"
+                      leftIcon={
+                        impersonatingId === company.id ? (
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <LogIn size={12} />
+                        )
+                      }
+                      onClick={() => handleImpersonateCompany(company)}
+                      disabled={impersonatingId !== null || !company.isActive}
+                      className="hidden sm:inline-flex font-bold shadow-xs cursor-pointer"
+                      title={`Entrar e gerenciar ${company.name}`}
+                    >
+                      {impersonatingId === company.id ? 'Entrando...' : 'Acessar'}
+                    </Button>
                   </div>
                 </div>
 
@@ -516,7 +568,7 @@ export default function Empresas() {
                   </div>
 
                   {company.admin ? (
-                    <div className="flex items-center justify-between gap-2 bg-white dark:bg-zinc-900 px-3 py-2 rounded-xl border border-violet-100 dark:border-violet-900/40">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white dark:bg-zinc-900 p-2.5 sm:px-3 sm:py-2.5 rounded-xl border border-violet-100 dark:border-violet-900/40">
                       <div className="min-w-0">
                         <p className="text-[10px] uppercase font-bold text-zinc-400">
                           E-mail de Login do Admin
@@ -526,7 +578,7 @@ export default function Empresas() {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                         <button
                           type="button"
                           onClick={() => handleCopyEmail(company.id, company.admin!.email)}
@@ -544,8 +596,26 @@ export default function Empresas() {
                           variant="secondary"
                           leftIcon={<KeyRound size={12} />}
                           onClick={() => openEditDrawer(company)}
+                          title="Alterar e-mail ou senha do administrador"
                         >
                           Alterar Login / Senha
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="primary"
+                          leftIcon={
+                            impersonatingId === company.id ? (
+                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <LogIn size={13} />
+                            )
+                          }
+                          onClick={() => handleImpersonateCompany(company)}
+                          disabled={impersonatingId !== null || !company.isActive}
+                          className="font-black bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-sm cursor-pointer"
+                          title={`Clique para entrar e acessar o painel de ${company.name}`}
+                        >
+                          {impersonatingId === company.id ? 'Acessando...' : 'Acessar Painel ↗'}
                         </Button>
                       </div>
                     </div>
@@ -555,8 +625,14 @@ export default function Empresas() {
                         <ShieldAlert size={14} />
                         Nenhum login ADMIN configurado para esta empresa
                       </span>
-                      <Button size="xs" variant="primary" onClick={() => openEditDrawer(company)}>
-                        Criar Login Admin
+                      <Button
+                        size="xs"
+                        variant="primary"
+                        leftIcon={<LogIn size={12} />}
+                        onClick={() => handleImpersonateCompany(company)}
+                        disabled={impersonatingId !== null}
+                      >
+                        Gerar Acesso & Entrar
                       </Button>
                     </div>
                   )}

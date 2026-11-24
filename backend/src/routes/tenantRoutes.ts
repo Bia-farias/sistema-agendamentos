@@ -55,5 +55,12 @@ router.delete(
   tenantController.deleteSaasCompany
 );
 
+router.post(
+  '/saas/companies/:id/impersonate',
+  authorize('SUPER_ADMIN', 'OWNER'),
+  validate(saasCompanyIdParamSchema),
+  tenantController.impersonateSaasCompany
+);
+
 export default router;
 
