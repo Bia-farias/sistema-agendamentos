@@ -97,13 +97,18 @@ export function Sidebar() {
       )}
     >
       {/* Brand Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-violet-100/60 dark:border-violet-900/20">
-        <NavLink to="/dashboard" className="flex items-center gap-3 overflow-hidden">
+      <div
+        className={cn(
+          'h-16 flex items-center border-b border-violet-100/60 dark:border-violet-900/20 relative transition-all',
+          isSidebarOpen ? 'justify-between px-4' : 'justify-center px-2'
+        )}
+      >
+        <NavLink to="/dashboard" className="flex items-center gap-3 shrink-0">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-400 via-violet-300 to-purple-300 flex items-center justify-center text-white font-black text-xl shadow-sm shadow-violet-300/40 shrink-0">
             A
           </div>
           {isSidebarOpen && (
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <span className="font-extrabold text-base tracking-tight text-zinc-800 dark:text-zinc-50 flex items-center gap-1.5">
                 Agenda AI
                 <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300 border border-violet-200/80 dark:border-violet-500/20">
@@ -120,10 +125,15 @@ export function Sidebar() {
         {/* Collapse Toggle Button */}
         <button
           onClick={toggleSidebar}
-          className="w-7 h-7 rounded-lg text-zinc-400 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-500/10 flex items-center justify-center transition-all duration-150"
+          className={cn(
+            'flex items-center justify-center text-zinc-400 hover:text-violet-600 dark:hover:text-violet-300 transition-all duration-150 cursor-pointer',
+            isSidebarOpen
+              ? 'w-7 h-7 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-500/10'
+              : 'absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white dark:bg-[#1a1728] border border-violet-200/90 dark:border-violet-700/60 shadow-md hover:scale-110 z-40 text-violet-600 dark:text-violet-300'
+          )}
           title={isSidebarOpen ? 'Recolher Menu' : 'Expandir Menu'}
         >
-          {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={14} />}
         </button>
       </div>
 
@@ -141,7 +151,8 @@ export function Sidebar() {
               to={item.path}
               onClick={item.onClick}
               className={cn(
-                'flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 group relative',
+                'flex items-center gap-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 group relative',
+                isSidebarOpen ? 'px-3.5' : 'justify-center px-0',
                 isActive
                   ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-200/70 dark:border-violet-500/20 shadow-sm'
                   : item.highlight
