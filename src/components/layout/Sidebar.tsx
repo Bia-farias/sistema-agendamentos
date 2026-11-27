@@ -99,12 +99,21 @@ export function Sidebar() {
       {/* Brand Header */}
       <div
         className={cn(
-          'h-16 flex items-center border-b border-violet-100/60 dark:border-violet-900/20 relative transition-all',
-          isSidebarOpen ? 'justify-between px-4' : 'justify-center px-2'
+          'h-16 flex items-center border-b border-violet-100/60 dark:border-violet-900/20 transition-all select-none',
+          isSidebarOpen ? 'justify-between px-4' : 'justify-between px-2.5'
         )}
       >
-        <NavLink to="/dashboard" className="flex items-center gap-3 shrink-0">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-400 via-violet-300 to-purple-300 flex items-center justify-center text-white font-black text-xl shadow-sm shadow-violet-300/40 shrink-0">
+        <NavLink
+          to="/dashboard"
+          className="flex items-center gap-2.5 shrink-0"
+          title="Agenda AI - Ir para o início"
+        >
+          <div
+            className={cn(
+              'rounded-xl bg-gradient-to-tr from-violet-400 via-violet-300 to-purple-300 flex items-center justify-center text-white font-black shadow-sm shadow-violet-300/40 shrink-0 transition-all',
+              isSidebarOpen ? 'w-10 h-10 text-xl rounded-2xl' : 'w-8 h-8 text-sm'
+            )}
+          >
             A
           </div>
           {isSidebarOpen && (
@@ -124,16 +133,17 @@ export function Sidebar() {
 
         {/* Collapse Toggle Button */}
         <button
+          type="button"
           onClick={toggleSidebar}
           className={cn(
-            'flex items-center justify-center text-zinc-400 hover:text-violet-600 dark:hover:text-violet-300 transition-all duration-150 cursor-pointer',
+            'flex items-center justify-center rounded-lg text-zinc-400 hover:text-violet-600 dark:hover:text-violet-300 transition-all duration-150 cursor-pointer shrink-0',
             isSidebarOpen
-              ? 'w-7 h-7 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-500/10'
-              : 'absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white dark:bg-[#1a1728] border border-violet-200/90 dark:border-violet-700/60 shadow-md hover:scale-110 z-40 text-violet-600 dark:text-violet-300'
+              ? 'w-7 h-7 hover:bg-violet-50 dark:hover:bg-violet-500/10'
+              : 'w-6 h-6 bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-500/20 shadow-xs'
           )}
           title={isSidebarOpen ? 'Recolher Menu' : 'Expandir Menu'}
         >
-          {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={14} />}
+          {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={15} />}
         </button>
       </div>
 
